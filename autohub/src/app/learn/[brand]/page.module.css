@@ -1,0 +1,94 @@
+.hero {
+  padding: 70px 30px;
+  color: #fff;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.heroContent {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.breadcrumbLink {
+  color: #fff;
+  text-decoration: none;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.brandLogo {
+  width: 72px;
+  height: 72px;
+  background: rgba(255,255,255,0.95);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+
+.brandLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.title {
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  opacity: 0.7;
+  font-size: 0.95rem;
+}
+
+.statsRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.statPill {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  padding: 10px 20px;
+  text-align: center;
+  min-width: 80px;
+}
+
+.statVal {
+  font-weight: 900;
+  font-size: 1.3rem;
+}
+
+.statLabel {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-top: 2px;
+}

@@ -1,0 +1,453 @@
+// ============================================================
+// AUTOHUB API SERVICE LAYER — WIRED TO REAL BACKEND
+// ============================================================
+
+import { API_BASE_URL } from "./config";
+import { Listing } from "../context/PostsContext";
+import { CAR_DATA } from "../data/cars";
+import { CarBrand, CarGeneration } from "../types/car";
+
+// ─── TYPES ───────────────────────────────────────────────────
+
+export type UserRole = "guest" | "user" | "dealer";
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  token: string;
+}
+
+export interface ProfileData {
+  name: string;
+  location: string;
+  phone: string;
+  whatsapp: string;
+  taxNumber: string;
+  email: string;
+  avatar?: string;
+  cover?: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface SignupPayload {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export interface DealerSignupPayload {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  location: string;
+  phone: string;
+  whatsapp: string;
+  taxNumber: string;
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────
+
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("autohub_token");
+}
+
+function authHeaders(): HeadersInit {
+  const token = getToken();
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+/** Normalise whatever shape the backend returns into AuthUser and persist session */
+function normalizeUser(
+  data: any,
+  defaultRole: UserRole,
+  fallbackName?: string,
+  fallbackEmail?: string
+): AuthUser {
+  // Unwrap the `{ success: true, data: { ... } }` payload if it exists
+  const payload = data.data ?? data;
+
+  const user: AuthUser = {
+    id: payload.user?.id ?? payload.user?._id ?? payload.id ?? payload._id ?? "",
+    name: payload.user?.name ?? payload.name ?? fallbackName ?? "",
+    email: payload.user?.email ?? payload.email ?? fallbackEmail ?? "",
+    role: (payload.user?.role ?? payload.role ?? defaultRole) as UserRole,
+    token: payload.token ?? payload.access_token ?? "",
+  };
+  if (typeof window !== "undefined") {
+    localStorage.setItem("autohub_token", user.token);
+    localStorage.setItem("autohub_user", JSON.stringify(user));
+    
+    // Set cookies for Next.js Middleware and Server Components
+    document.cookie = `autohub_token=${user.token}; path=/; max-age=604800; SameSite=Lax`;
+    document.cookie = `autohub_role=${user.role}; path=/; max-age=604800; SameSite=Lax`;
+  }
+  return user;
+}
+
+/** Map a raw API post object → our internal Listing shape */
+function mapApiPostToListing(p: any): Listing {
+  return {
+    id: String(p.id ?? p._id ?? Date.now()),
+    name: p.title ?? `${p.brand ?? ""} ${p.model ?? ""}`.trim(),
+    year: String(p.year ?? ""),
+    category: p.condition ?? "Used",
+    mileage: p.mileage != null ? `${p.mileage} KM` : "",
+    transmission: p.transmission ?? "",
+    location: p.location ?? "",
+    price:
+      p.price != null
+        ? `${Number(p.price).toLocaleString()} ${p.currency ?? "EGP"}`
+        : "",
+    image:
+      Array.isArray(p.images) && p.images.length > 0
+        ? p.images[0]
+        : p.image ?? "",
+    images: Array.isArray(p.images) ? p.images : (p.image ? [p.image] : []),
+    link: `/car-details/${p.id ?? p._id ?? Date.now()}`,
+    manufacturer: p.brand ?? "",
+    model: p.model ?? "",
+    body: p.bodyType ?? "",
+    fuel: p.fuelType ?? "",
+    color: p.color ?? "",
+    description: p.description ?? "",
+    negotiable: p.negotiable ?? false,
+    payments: Array.isArray(p.paymentOptions) ? p.paymentOptions : [],
+    contactPhone: p.contactPhone ?? "",
+  };
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────
+
+/** POST /api/auth/login */
+export async function loginUser(payload: LoginPayload): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Login failed");
+  }
+  return normalizeUser(await res.json(), "user");
+}
+
+
+/** POST /api/auth/register/user */
+export async function signupUser(payload: SignupPayload): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE_URL}/auth/register/user`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Signup failed");
+  }
+  return normalizeUser(await res.json(), "user", payload.name, payload.email);
+}
+
+/** POST /api/auth/register/dealer */
+export async function dealerSignup(
+  payload: DealerSignupPayload
+): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE_URL}/auth/register/dealer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Dealer registration failed");
+  }
+  return normalizeUser(
+    await res.json(),
+    "dealer",
+    payload.name,
+    payload.email
+  );
+}
+
+/** Clear local session (no server-side logout endpoint provided) */
+export async function logoutUser(): Promise<void> {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("autohub_token");
+    localStorage.removeItem("autohub_user");
+    document.cookie = "autohub_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "autohub_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  }
+}
+
+/** Restore session from localStorage (no /auth/me endpoint provided) */
+export async function getMe(): Promise<AuthUser | null> {
+  const stored = localStorage.getItem("autohub_user");
+  if (!stored) return null;
+  return JSON.parse(stored) as AuthUser;
+}
+
+// ─── PROFILE ─────────────────────────────────────────────────
+
+/** GET /api/dealers/me/profile */
+export async function getProfile(): Promise<ProfileData> {
+  const res = await fetch(`${API_BASE_URL}/dealers/me/profile`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    return { name: "", email: "", location: "", phone: "", whatsapp: "", taxNumber: "" };
+  }
+  const data = await res.json();
+  const payload = data.data ?? data;
+  return {
+    name: payload.name ?? "",
+    email: payload.email ?? "",
+    location: payload.location ?? "",
+    phone: payload.phone ?? "",
+    whatsapp: payload.whatsapp ?? "",
+    taxNumber: payload.taxNumber ?? "",
+    avatar: payload.avatar ?? payload.avatarUrl ?? "",
+    cover: payload.cover ?? payload.coverImage ?? payload.coverUrl ?? "",
+  };
+}
+
+/** PUT /api/dealers/me/profile */
+export async function updateProfile(data: ProfileData): Promise<ProfileData> {
+  const res = await fetch(`${API_BASE_URL}/dealers/me/profile`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update profile");
+  const updated = await res.json();
+  const payload = updated.data ?? updated;
+  return {
+    name: payload.name ?? data.name,
+    email: payload.email ?? data.email,
+    location: payload.location ?? data.location,
+    phone: payload.phone ?? data.phone,
+    whatsapp: payload.whatsapp ?? data.whatsapp,
+    taxNumber: payload.taxNumber ?? data.taxNumber,
+    avatar: payload.avatar ?? data.avatar,
+    cover: payload.cover ?? payload.coverImage ?? data.cover,
+  };
+}
+
+/** GET /api/users/me/profile (Best effort for regular users) */
+export async function getUserProfile(): Promise<ProfileData> {
+  const res = await fetch(`${API_BASE_URL}/users/me/profile`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    return { name: "", email: "", location: "", phone: "", whatsapp: "", taxNumber: "" };
+  }
+  const data = await res.json();
+  const payload = data.data ?? data;
+  return {
+    name: payload.name ?? "",
+    email: payload.email ?? "",
+    location: payload.location ?? "",
+    phone: payload.phone ?? "",
+    whatsapp: payload.whatsapp ?? "",
+    taxNumber: payload.taxNumber ?? "",
+    avatar: payload.avatar ?? payload.avatarUrl ?? "",
+    cover: payload.cover ?? payload.coverImage ?? payload.coverUrl ?? "",
+  };
+}
+
+/** PUT /api/users/me/profile (Best effort for regular users) */
+export async function updateUserProfile(data: ProfileData): Promise<ProfileData> {
+  const res = await fetch(`${API_BASE_URL}/users/me/profile`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update user profile");
+  const updated = await res.json();
+  const payload = updated.data ?? updated;
+  return {
+    name: payload.name ?? data.name,
+    email: payload.email ?? data.email,
+    location: payload.location ?? data.location,
+    phone: payload.phone ?? data.phone,
+    whatsapp: payload.whatsapp ?? data.whatsapp,
+    taxNumber: payload.taxNumber ?? data.taxNumber,
+    avatar: payload.avatar ?? data.avatar,
+    cover: payload.cover ?? payload.coverImage ?? data.cover,
+  };
+}
+
+// ─── LISTINGS / POSTS ─────────────────────────────────────────
+
+/** GET /api/posts */
+export async function getListings(): Promise<Listing[]> {
+  const res = await fetch(`${API_BASE_URL}/posts`);
+  if (!res.ok) throw new Error("Failed to fetch listings");
+  const data = await res.json();
+  const payload = data.data ?? data;
+  const posts = Array.isArray(payload) ? payload : (payload.posts ?? []);
+  return posts.map(mapApiPostToListing);
+}
+
+/** GET /api/posts/:id */
+export async function getListingById(id: string): Promise<Listing> {
+  const res = await fetch(`${API_BASE_URL}/posts/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch listing");
+  const data = await res.json();
+  const payload = data.data ?? data;
+  const post = payload.post ?? payload;
+  return mapApiPostToListing(post);
+}
+
+/** POST /api/posts  — sends multipart/form-data so images are real files */
+export async function createListing(
+  listing: Omit<Listing, "id">,
+  imageFiles?: File[]
+): Promise<Listing> {
+  const formData = new FormData();
+  formData.append("title", listing.name);
+  formData.append("description", listing.description);
+  formData.append("brand", listing.manufacturer);
+  formData.append("model", listing.model ?? "");
+  formData.append("bodyType", listing.body);
+  formData.append("year", listing.year.toString());
+  formData.append("mileage", listing.mileage.replace(/[^0-9.]/g, ""));
+  formData.append("price", listing.price.replace(/[^0-9.]/g, ""));
+  formData.append("currency", "EGP");
+  formData.append("condition", listing.category);
+  formData.append("color", listing.color);
+  formData.append("transmission", listing.transmission);
+  formData.append("fuelType", listing.fuel);
+  formData.append("contactPhone", listing.contactPhone ?? "");
+  listing.payments.forEach((p) => formData.append("paymentOptions", p));
+  if (imageFiles?.length) {
+    imageFiles.forEach((f) => formData.append("images", f));
+  }
+
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}/posts`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to create listing");
+  }
+  const responseData = await res.json();
+  const payload = responseData.data ?? responseData;
+  return mapApiPostToListing(payload);
+}
+
+// ─── UNIFIED SEARCH & LEARNING ────────────────────────────────
+
+export interface LearningCar {
+  id: string;        // used as the href — encodes brand + model
+  name: string;
+  brand: string;
+  model: string;
+  year: string;
+  engine: string;
+  hp: string;
+  image: string;
+  description: string;
+}
+
+/** Returns the first valid external photo URL from any generation of the model, or empty string. */
+function getModelImage(model: { g: CarGeneration[] }): string {
+  for (const gen of model.g) {
+    // photos[] always contains absolute https:// URLs — prefer these
+    if (gen.photos && gen.photos.length > 0) {
+      const validPhoto = gen.photos.find((p) => p.startsWith("http"));
+      if (validPhoto) return validPhoto;
+    }
+    // g.i is a local file path (data\\images\\...) — skip it; it won't work in browser
+  }
+  return "";
+}
+
+/**
+ * Build a flat LearningCar[] from the full CAR_DATA dataset.
+ * Each entry represents one model (using its first generation's data for specs).
+ * The `id` encodes the brand/model path so it links to /learn/[brand]/[model].
+ */
+function buildLearningIndex(): LearningCar[] {
+  const results: LearningCar[] = [];
+
+  (CAR_DATA as CarBrand[]).forEach((brand) => {
+    brand.m.forEach((model) => {
+      const g0: CarGeneration | undefined = model.g[0];
+      if (!g0) return;
+
+      // Always use a real external https:// URL — search all generations
+      const image = getModelImage(model);
+
+      const firstEngine = g0.mods?.[0]?.engine ?? "";
+      const hp = g0.hp
+        ? g0.hp.replace("Power from ", "").replace(" to ", "–")
+        : "";
+
+      results.push({
+        // Encode brand+model into the id so search results link correctly
+        id: `${encodeURIComponent(brand.n)}/${encodeURIComponent(model.n)}`,
+        name: model.n,
+        brand: brand.n,
+        model: model.n.replace(new RegExp(`^${brand.n}\\s*`, "i"), "").trim() || model.n,
+        year: g0.y ?? "",
+        engine: firstEngine,
+        hp,
+        image, // already a full https:// URL or empty string
+        description: g0.desc ?? "",
+      });
+    });
+  });
+
+  return results;
+}
+
+// Build once at module level (server-side, no repeated work)
+const LEARNING_INDEX: LearningCar[] = buildLearningIndex();
+
+export async function getLearningCars(query?: string): Promise<LearningCar[]> {
+  if (!query || !query.trim()) return LEARNING_INDEX;
+
+  const q = query.toLowerCase().trim();
+  return LEARNING_INDEX.filter(
+    (car) =>
+      car.name.toLowerCase().includes(q) ||
+      car.brand.toLowerCase().includes(q) ||
+      car.model.toLowerCase().includes(q)
+  );
+}
+
+export async function searchMarketplace(query: string): Promise<Listing[]> {
+  const allListings = await getListings().catch(() => []);
+  if (!query) return allListings;
+
+  const q = query.toLowerCase();
+  return allListings.filter(
+    (car) =>
+      car.name.toLowerCase().includes(q) ||
+      car.manufacturer.toLowerCase().includes(q) ||
+      car.model.toLowerCase().includes(q) ||
+      car.description.toLowerCase().includes(q)
+  );
+}
+
+export async function unifiedSearch(query: string) {
+  const [learning, ads] = await Promise.all([
+    getLearningCars(query),
+    searchMarketplace(query),
+  ]);
+  return { learning, ads };
+}

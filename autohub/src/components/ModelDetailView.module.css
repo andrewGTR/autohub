@@ -1,0 +1,234 @@
+.section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.noData {
+  padding: 40px;
+  text-align: center;
+  color: #888;
+}
+
+/* Generation Tabs */
+.tabsContainer {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 40px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+  scrollbar-width: thin;
+}
+
+.tabButton {
+  padding: 12px 24px;
+  border-radius: 30px;
+  border: 1px solid #e0e0e0;
+  background: #f9f9fb;
+  color: #333;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.tabButton:hover:not(.activeTab) {
+  background: #ececf1;
+}
+
+.activeTab {
+  border: none;
+  background: #1a1a2e;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(26,26,46,0.15);
+}
+
+/* Grid Layout */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 40px;
+}
+
+/* Main Gallery */
+.mainImageContainer {
+  border-radius: 20px;
+  overflow: hidden;
+  background: #f0f0f5;
+  margin-bottom: 20px;
+  border: 1px solid #e8e8ed;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  position: relative;
+}
+
+.mainImage {
+  width: 100%;
+  height: auto;
+  min-height: 250px;
+  display: block;
+  object-fit: cover;
+}
+
+/* Thumbnails */
+.thumbnailsContainer {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  margin-bottom: 35px;
+  padding-bottom: 10px;
+  scrollbar-width: none;
+}
+
+.thumbnail {
+  width: 90px;
+  height: 65px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.thumbnail:hover:not(.activeThumbnail) {
+  opacity: 1;
+}
+
+.activeThumbnail {
+  border: 3px solid #3a3aff;
+  opacity: 1;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Description */
+.descriptionBox {
+  padding: 28px;
+  background: linear-gradient(to bottom right, #ffffff, #f9f9fc);
+  border-radius: 16px;
+  margin-bottom: 35px;
+  border: 1px solid #edf2f7;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+.descHeader {
+  margin-bottom: 16px;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.descText {
+  font-size: 1rem;
+  color: #4a5568;
+  line-height: 1.7;
+}
+
+/* Quick Specs */
+.quickSpecsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 35px;
+}
+
+.specBox {
+  padding: 20px 16px;
+  border-radius: 16px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.specBox:hover {
+  transform: translateY(-4px);
+}
+
+.specHpFrom { background: #fff5f5; border: 1px solid #fed7d7; }
+.specHpTo { background: #fffaf0; border: 1px solid #feebc8; }
+.specFuel { background: #f0fff4; border: 1px solid #c6f6d5; }
+.specPrice { background: #ebf8ff; border: 1px solid #bee3f8; }
+
+.specVal { font-size: 1.3rem; font-weight: 900; }
+.specLbl { font-size: 0.75rem; text-transform: uppercase; margin-top: 4px; font-weight: 700; letter-spacing: 0.5px; }
+
+/* Colors for specific spec values/labels */
+.colorHpFromVal { color: #e53e3e; }
+.colorHpFromLbl { color: #c53030; }
+.colorHpToVal { color: #dd6b20; }
+.colorHpToLbl { color: #c05621; }
+.colorFuelVal { color: #38a169; }
+.colorFuelLbl { color: #2f855a; }
+.colorPriceVal { color: #3182ce; }
+.colorPriceLbl { color: #2b6cb0; }
+
+/* Tables */
+.tableSection {
+  margin-bottom: 45px;
+}
+
+.tableTitle {
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  border-bottom: 2px solid #f0f0f5;
+  padding-bottom: 10px;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.dataTable thead {
+  background: #f8fafc;
+  color: #475569;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.dataTable th {
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 700;
+}
+
+.dataTable tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s;
+}
+
+.dataTable tr:nth-child(even) { background: #f8fafc; }
+.dataTable tr:nth-child(odd) { background: #ffffff; }
+
+.dataTable td {
+  padding: 14px 16px;
+}
+
+.fw600 { font-weight: 600; }
+.fw700 { font-weight: 700; }
+.fw800 { font-weight: 800; }
+.textPrimary { color: #1e293b; }
+.textSecondary { color: #64748b; }
+.textRed { color: #e53e3e; }
+.textGreen { color: #059669; }
