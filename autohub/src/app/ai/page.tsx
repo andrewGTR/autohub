@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import Link from "next/link";
 import PageNavbar from "../../components/PageNavbar";
-import "./ai.css";
 
 interface Message {
   id: number | string;

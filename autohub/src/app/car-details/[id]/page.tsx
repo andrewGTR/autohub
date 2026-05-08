@@ -1,5 +1,4 @@
 "use client";
-import "../page.css";
 import { useState, useEffect, useCallback, useRef } from "react";
 import PageNavbar from "../../../components/PageNavbar";
 import { useParams } from "next/navigation";

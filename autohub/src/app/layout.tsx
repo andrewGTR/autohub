@@ -5,14 +5,6 @@ import { PostsProvider } from "../context/PostsContext";
 import { SavedCarsProvider } from "../context/SavedCarsContext";
 import ChatbotButton from "../components/ChatbotButton";
 import "./globals.css";
-import "./page.css";
-import "./marketplace/page.css";
-import "./car-details/page.css";
-import "./dealer-profile/page.css";
-import "./dealer-signup/page.css";
-import "./login/page.css";
-import "./signup/page.css";
-import "./user-profile/page.css";
 
 const alexandria = Alexandria({
   variable: "--font-alexandria",

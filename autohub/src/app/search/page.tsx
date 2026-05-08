@@ -8,7 +8,6 @@ import CarCard from "../../components/CarCard";
 import { unifiedSearch, LearningCar } from "../../lib/api";
 import { Listing } from "../../context/PostsContext";
 import Link from "next/link";
-import "./page.css";
 
 function SearchContent() {
   const searchParams = useSearchParams();

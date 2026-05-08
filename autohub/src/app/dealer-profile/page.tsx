@@ -10,7 +10,6 @@ import type { ProfileData } from "../../lib/api";
 import type { Listing } from "../../context/PostsContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import "./page.css";
 
 export default function DealerProfile() {
   const { isLoggedIn, logout, user, userRole } = useAuth();
