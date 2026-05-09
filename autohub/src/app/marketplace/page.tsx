@@ -51,7 +51,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
   }
 
   if (resolvedParams.fuel && resolvedParams.fuel !== "all") {
-    filteredCars = filteredCars.filter((c) => c.fuelType?.toLowerCase() === resolvedParams.fuel?.toLowerCase());
+    filteredCars = filteredCars.filter((c) => c.fuel?.toLowerCase() === resolvedParams.fuel?.toLowerCase());
   }
 
   if (resolvedParams.isOffer === "true") {
@@ -83,12 +83,12 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
 
   if (resolvedParams.yearMin) {
     const min = parseInt(resolvedParams.yearMin, 10);
-    filteredCars = filteredCars.filter((c) => (c.year || 0) >= min);
+    filteredCars = filteredCars.filter((c) => Number(c.year || 0) >= min);
   }
 
   if (resolvedParams.yearMax) {
     const max = parseInt(resolvedParams.yearMax, 10);
-    filteredCars = filteredCars.filter((c) => (c.year || 0) <= max);
+    filteredCars = filteredCars.filter((c) => Number(c.year || 0) <= max);
   }
 
   if (resolvedParams.kmMin) {

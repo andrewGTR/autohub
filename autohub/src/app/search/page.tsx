@@ -52,7 +52,7 @@ function SearchContent() {
         
         const fuel = searchParams?.get("fuel");
         if (fuel && fuel !== "all") {
-          filteredAds = filteredAds.filter((c) => c.fuelType?.toLowerCase() === fuel.toLowerCase());
+          filteredAds = filteredAds.filter((c) => c.fuel?.toLowerCase() === fuel.toLowerCase());
         }
         
         if (searchParams?.get("isOffer") === "true") {
@@ -80,13 +80,13 @@ function SearchContent() {
         const yearMin = searchParams?.get("yearMin");
         if (yearMin) {
           const min = parseInt(yearMin, 10);
-          filteredAds = filteredAds.filter(c => (c.year || 0) >= min);
+          filteredAds = filteredAds.filter(c => Number(c.year || 0) >= min);
         }
         
         const yearMax = searchParams?.get("yearMax");
         if (yearMax) {
           const max = parseInt(yearMax, 10);
-          filteredAds = filteredAds.filter(c => (c.year || 0) <= max);
+          filteredAds = filteredAds.filter(c => Number(c.year || 0) <= max);
         }
         
         const kmMin = searchParams?.get("kmMin");
@@ -148,7 +148,6 @@ function SearchContent() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
             <FiltersToggle />
           </div>
-        </div>
 
         <OffcanvasFilter />
 

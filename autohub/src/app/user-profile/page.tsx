@@ -102,7 +102,7 @@ export default function UserProfile() {
       // Persist to backend
       try {
         const { updateUserProfile } = await import("../../lib/api");
-        await updateUserProfile(dataToSave as any, fileToSave);
+        await updateUserProfile(dataToSave as any, fileToSave || undefined);
       } catch (e) {
         console.warn("Backend save failed, falling back to local storage", e);
       }
