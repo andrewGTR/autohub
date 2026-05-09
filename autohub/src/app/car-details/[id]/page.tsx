@@ -109,7 +109,7 @@ export default function CarDetails() {
 
   const shareWhatsApp = () => {
     if (!car) return;
-    const phone = car.contactPhone?.replace(/\D/g, "");
+    const phone = (car.dealerPhone || car.contactPhone)?.replace(/\D/g, "");
     const text = encodeURIComponent(`Hi, I'm interested in your listing: ${car.name} ${car.year} — ${car.price}\n${window.location.href}`);
     window.open(phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`, "_blank");
   };
@@ -160,7 +160,26 @@ export default function CarDetails() {
       .filter(Boolean)
       .join(" · ") || "Fixed Price";
 
-  const sellerInitial = car.manufacturer?.charAt(0).toUpperCase() || "S";
+  const sellerName = car.dealerName || `${car.manufacturer} Dealer`;
+  const sellerInitial = sellerName.charAt(0).toUpperCase() || "S";
+  const displayPhone = car.dealerPhone || car.contactPhone;
+
+  const parsePrice = (priceStr?: string) => {
+    if (!priceStr) return 0;
+    const num = parseInt(priceStr.replace(/[^0-9]/g, ""), 10);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const getDiscountPercent = (orig: string, offer: string) => {
+    const o = parsePrice(orig);
+    const f = parsePrice(offer);
+    if (o > 0 && f > 0 && f < o) {
+      return Math.round(((o - f) / o) * 100);
+    }
+    return 0;
+  };
+
+  const discountPercent = car.isOffer && car.offerPrice ? getDiscountPercent(car.price, car.offerPrice) : 0;
 
   return (
     <>
@@ -208,7 +227,19 @@ export default function CarDetails() {
             {[car.body, car.location].filter(Boolean).join("  ·  ")}
           </p>
           <div className="cd-hero-price">
-            {car.price}
+            {car.isOffer && car.offerPrice ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ textDecoration: 'line-through', opacity: 0.7, fontSize: '0.7em', color: 'white' }}>{car.price}</span>
+                <span>{car.offerPrice}</span>
+                {discountPercent > 0 && (
+                  <span style={{ background: '#dd0000', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.5em', fontWeight: 'bold' }}>
+                    {discountPercent}% OFF
+                  </span>
+                )}
+              </div>
+            ) : (
+              car.price
+            )}
           </div>
         </div>
 
@@ -310,7 +341,23 @@ export default function CarDetails() {
           {/* Price card */}
           <div className="cd-price-card">
             <div>
-              <div className="cd-pc-price">{car.price}</div>
+              {car.isOffer && car.offerPrice ? (
+                <>
+                  <div className="cd-pc-price" style={{ textDecoration: 'line-through', color: 'white', fontSize: '1.2rem', marginBottom: '4px' }}>
+                    {car.price}
+                  </div>
+                  <div className="cd-pc-price" style={{ color: '#dd0000' }}>
+                    {car.offerPrice}
+                    {discountPercent > 0 && (
+                      <span style={{ background: '#dd0000', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.8rem', marginLeft: '8px', verticalAlign: 'middle' }}>
+                        {discountPercent}% OFF
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="cd-pc-price">{car.price}</div>
+              )}
               <div className="cd-pc-note">{paymentNote}</div>
             </div>
             <div className="cd-pc-rating">
@@ -318,8 +365,8 @@ export default function CarDetails() {
               <strong>Verified Listing</strong>
             </div>
             <hr className="cd-pcdiv" />
-            {car.contactPhone && (
-              <a href={`tel:${car.contactPhone}`} className="cd-btn-full">
+            {displayPhone && (
+              <a href={`tel:${displayPhone}`} className="cd-btn-full">
                 📞 Call Seller
               </a>
             )}
@@ -339,19 +386,28 @@ export default function CarDetails() {
           {/* Seller card */}
           <div className="cd-seller-card">
             <div className="cd-sc-top">
-              <div className="cd-sc-av">{sellerInitial}</div>
+              {car.dealerAvatar ? (
+                <img src={car.dealerAvatar} alt={sellerName} className="cd-sc-av" style={{ objectFit: 'cover' }} />
+              ) : (
+                <div className="cd-sc-av">{sellerInitial}</div>
+              )}
               <div>
-                <div className="cd-sc-name">{car.manufacturer} Dealer</div>
-                <div className="cd-sc-badge">⭐ Verified Seller</div>
+                <Link href={car.dealerId ? `/dealer-profile?id=${car.dealerId}` : "#"} style={{ textDecoration: 'none' }}>
+                  <div className="cd-sc-name" style={{ cursor: 'pointer', color: '#1a1a1a' }}>{sellerName}</div>
+                </Link>
+                <div className="cd-sc-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#3a3aff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                  Verified Dealer
+                </div>
               </div>
             </div>
-            {car.contactPhone && (
-              <p className="cd-sc-meta">📞 {car.contactPhone}</p>
+            {displayPhone && (
+              <p className="cd-sc-meta">📞 {displayPhone}</p>
             )}
             <p className="cd-sc-meta">📍 {car.location || "Egypt"}</p>
             <div className="cd-cta-stack">
-              {car.contactPhone && (
-                <a href={`tel:${car.contactPhone}`} className="cd-btn-call">📞 Call Now</a>
+              {displayPhone && (
+                <a href={`tel:${displayPhone}`} className="cd-btn-call">📞 Call Now</a>
               )}
               <button className="cd-btn-wa" onClick={shareWhatsApp}>💬 WhatsApp</button>
             </div>

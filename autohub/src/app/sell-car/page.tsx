@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import PageNavbar from "../../components/PageNavbar";
 import { useAuth } from "../../context/AuthContext";
 import { usePosts } from "../../context/PostsContext";
@@ -29,8 +29,11 @@ const colorMap: Record<string, string> = {
 
 export default function SellCar() {
   const { isLoggedIn, userRole } = useAuth();
-  const { addListing } = usePosts();
+  const { addListing, updateListing, listings } = usePosts();
   const router = useRouter();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
 
   // Redirect if not a dealer
   if (!isLoggedIn || userRole !== "dealer") {
@@ -59,6 +62,8 @@ export default function SellCar() {
 
   // Pricing & contact
   const [price, setPrice] = useState("");
+  const [isOffer, setIsOffer] = useState(false);
+  const [offerPrice, setOfferPrice] = useState("");
   const [negotiable, setNegotiable] = useState(true);
   const [payments, setPayments] = useState<string[]>([]);
   const [governorate, setGovernorate] = useState("");
@@ -69,6 +74,51 @@ export default function SellCar() {
 
   const years = Array.from({ length: 36 }, (_, i) => 2025 - i);
   const currentModels = modelsData[manufacturer] || [];
+
+  // Load edit data
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const edit = params.get("edit");
+      if (edit) {
+        setEditId(edit);
+        setIsEditing(true);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (editId && listings.length > 0) {
+      const listing = listings.find(l => l.id === editId);
+      if (listing) {
+        setManufacturer(listing.manufacturer);
+        setModel(listing.model);
+        setYear(listing.year);
+        setColor(listing.color);
+        setMileage(listing.mileage.replace(/[^0-9.]/g, ""));
+        setCondition(listing.category);
+        setTransmission(listing.transmission);
+        setBody(listing.body);
+        setFuel(listing.fuel);
+        setDescription(listing.description);
+        setPrice(listing.price.replace(/[^0-9.]/g, ""));
+        setIsOffer(listing.isOffer ?? false);
+        if (listing.offerPrice) setOfferPrice(listing.offerPrice.replace(/[^0-9.]/g, ""));
+        setNegotiable(listing.negotiable);
+        setPayments(listing.payments);
+        
+        const locParts = listing.location.split(",").map(p => p.trim());
+        if (locParts.length >= 2) {
+          setDistrict(locParts[0]);
+          setGovernorate(locParts[1]);
+        } else {
+          setGovernorate(listing.location);
+        }
+        setContactPhone(listing.contactPhone);
+        setImagePreviews(listing.images?.length ? listing.images : (listing.image ? [listing.image] : []));
+      }
+    }
+  }, [editId, listings]);
 
   // ── Image handlers ──────────────────────────────────────────
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +167,11 @@ export default function SellCar() {
     }
 
     if (from === 3) {
-      if (!price)            errors.push("Price");
+      if (!price) errors.push("Original Price");
+      if (isOffer) {
+        if (!offerPrice) errors.push("Offer Price");
+        else if (parseInt(offerPrice) >= parseInt(price)) errors.push("Offer Price must be lower than Original Price");
+      }
       if (payments.length === 0) errors.push("At least one Payment Option");
       if (!governorate)      errors.push("Governorate");
       if (!contactPhone.trim()) errors.push("Contact Phone");
@@ -152,6 +206,8 @@ export default function SellCar() {
         transmission,
         location: [district, governorate].filter(Boolean).join(", ") || "Egypt",
         price: `${parseInt(price || "0").toLocaleString()} EGP`,
+        isOffer,
+        offerPrice: isOffer && offerPrice ? `${parseInt(offerPrice || "0").toLocaleString()} EGP` : undefined,
         image: imagePreviews[0] || "",
         link: "", // The API mapApiPostToListing will generate the real dynamic link
         manufacturer,
@@ -164,8 +220,11 @@ export default function SellCar() {
         payments,
         contactPhone,
       };
-      // Pass the real File objects so api.createListing sends multipart/form-data
-      await addListing(newListing, imageFilesRef.current);
+      if (isEditing && editId) {
+        await updateListing(editId, newListing, imageFilesRef.current);
+      } else {
+        await addListing(newListing, imageFilesRef.current);
+      }
       setShowSuccess(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e: any) {
@@ -181,7 +240,7 @@ export default function SellCar() {
     setManufacturer(""); setModel(""); setYear(""); setColor("");
     setMileage(""); setCondition("New"); setTransmission("Automatic");
     setBody(""); setFuel(""); setDescription("");
-    setPrice(""); setNegotiable(true); setPayments([]);
+    setPrice(""); setIsOffer(false); setOfferPrice(""); setNegotiable(true); setPayments([]);
     setGovernorate(""); setDistrict(""); setContactPhone("");
     setAgreed(false); setShowSuccess(false); setCurrentSection(1);
   };
@@ -193,7 +252,7 @@ export default function SellCar() {
       {!showSuccess && (
         <div className="page-header">
           <div className="ph-left">
-            <h1>Sell Your Car</h1>
+            <h1>{isEditing ? "Edit Your Car" : "Sell Your Car"}</h1>
             <p>Fill in the details below and reach thousands of buyers</p>
           </div>
           <div className="ph-steps">
@@ -214,8 +273,8 @@ export default function SellCar() {
         {showSuccess && (
           <div className="success-screen">
             <div className="success-icon">🎉</div>
-            <h2>Listing Published!</h2>
-            <p>Your car has been listed successfully. Buyers can now find it on Auto Hub.</p>
+            <h2>{isEditing ? "Listing Updated!" : "Listing Published!"}</h2>
+            <p>Your car has been {isEditing ? "updated" : "listed"} successfully. Buyers can now find it on Auto Hub.</p>
             <div className="success-actions">
               <Link href="/" className="btn-next">Go to Home</Link>
               <button className="btn-back" onClick={resetForm}>List Another Car</button>
@@ -384,6 +443,25 @@ export default function SellCar() {
               </div>
 
               <div className="field">
+                <label>Offer / Discount Price</label>
+                <div className="toggle-group">
+                  <button className={`tgl ${isOffer ? "active" : ""}`} onClick={() => setIsOffer(true)}>✅ Enabled</button>
+                  <button className={`tgl ${!isOffer ? "active" : ""}`} onClick={() => setIsOffer(false)}>❌ Disabled</button>
+                </div>
+              </div>
+
+              {isOffer && (
+                <div className="field">
+                  <label>Offer Price (EGP) <span className="req">*</span></label>
+                  <div className="input-wrap">
+                    <span className="prefix">EGP</span>
+                    <input type="number" placeholder="e.g. 950000" min="0" value={offerPrice} onChange={(e) => setOfferPrice(e.target.value)} />
+                  </div>
+                  <div className="price-display" style={{ color: "#dd0000" }}>{offerPrice ? parseInt(offerPrice).toLocaleString("en-EG") + " EGP" : ""}</div>
+                </div>
+              )}
+
+              <div className="field">
                 <label>Is the price negotiable?</label>
                 <div className="toggle-group">
                   <button className={`tgl ${negotiable ? "active" : ""}`} onClick={() => setNegotiable(true)}>✅ Yes</button>
@@ -394,7 +472,7 @@ export default function SellCar() {
               <div className="field full">
                 <label>Accepted Payment Options <span className="req">*</span></label>
                 <div className="check-cards">
-                  {["Cash", "Installment", "Bank Transfer", "Credit Card", "Crypto"].map(p => (
+                  {["Cash", "Installment", "Bank Transfer"].map(p => (
                     <label key={p} className={`ccard ${payments.includes(p) ? "active" : ""}`}>
                       <input type="checkbox" checked={payments.includes(p)} onChange={() => togglePayment(p)} />
                       {p}
@@ -449,7 +527,8 @@ export default function SellCar() {
                 { label: "Transmission", val: transmission },
                 { label: "Body Shape",   val: body },
                 { label: "Fuel Type",    val: fuel },
-                { label: "Price",        val: parseInt(price || "0").toLocaleString() + " EGP" },
+                { label: "Original Price", val: parseInt(price || "0").toLocaleString() + " EGP" },
+                ...(isOffer ? [{ label: "Offer Price", val: parseInt(offerPrice || "0").toLocaleString() + " EGP", highlight: true }] : []),
                 { label: "Negotiable",   val: negotiable ? "Yes" : "No" },
                 { label: "Payment",      val: payments.join(", ") },
                 { label: "Location",     val: [district, governorate].filter(Boolean).join(", ") || "—" },
@@ -457,7 +536,7 @@ export default function SellCar() {
               ].map((it, idx) => (
                 <div key={idx} className="review-card">
                   <div className="rc-label">{it.label}</div>
-                  <div className="rc-val">{it.val || "—"}</div>
+                  <div className="rc-val" style={it.highlight ? { color: "#dd0000", fontWeight: "bold" } : {}}>{it.val || "—"}</div>
                 </div>
               ))}
 
@@ -486,7 +565,7 @@ export default function SellCar() {
             <div className="section-nav">
               <button className="btn-back" onClick={() => prevSection(4)}>← Edit</button>
               <button className="btn-submit" onClick={submitForm} disabled={submitting}>
-                {submitting ? "Publishing..." : "🚀 Publish Listing"}
+                {submitting ? (isEditing ? "Updating..." : "Publishing...") : (isEditing ? "📝 Update Listing" : "🚀 Publish Listing")}
               </button>
             </div>
           </div>

@@ -8,7 +8,7 @@ import SavedCarsGrid from "../../components/SavedCarsGrid";
 import { useRouter } from "next/navigation";
 
 export default function UserProfile() {
-  const { isLoggedIn, logout, user, userRole } = useAuth();
+  const { isLoggedIn, logout, user, userRole, setAuth } = useAuth();
   const router = useRouter();
   const { savedCars } = useSavedCars();
   const [activeTab, setActiveTab] = useState<"info" | "saved">("info");
@@ -27,8 +27,9 @@ export default function UserProfile() {
     location: "",
   };
 
-  const [formData, setFormData] = useState(defaultProfile);
-  const [originalData, setOriginalData] = useState(defaultProfile);
+  const [formData, setFormData] = useState<any>(defaultProfile);
+  const [originalData, setOriginalData] = useState<any>(defaultProfile);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load profile data on mount — keyed by user ID so profiles never bleed across accounts
@@ -89,8 +90,9 @@ export default function UserProfile() {
     });
   }, [isLoggedIn, userRole, user]);
 
-  const handleSave = async (overrideData?: any) => {
+  const handleSave = async (overrideData?: any, overrideFile?: File | null) => {
     const dataToSave = overrideData || formData;
+    const fileToSave = overrideFile !== undefined ? overrideFile : avatarFile;
     if (!dataToSave.name || !dataToSave.email) {
       alert("Name and Email cannot be empty");
       return;
@@ -100,7 +102,7 @@ export default function UserProfile() {
       // Persist to backend
       try {
         const { updateUserProfile } = await import("../../lib/api");
-        await updateUserProfile(dataToSave as any);
+        await updateUserProfile(dataToSave as any, fileToSave);
       } catch (e) {
         console.warn("Backend save failed, falling back to local storage", e);
       }
@@ -111,6 +113,9 @@ export default function UserProfile() {
           `user_profile_${user.id}`,
           JSON.stringify({ phone: dataToSave.phone, location: dataToSave.location, avatar: dataToSave.avatar })
         );
+        const updatedUser = { ...user, name: dataToSave.name, email: dataToSave.email };
+        setAuth(updatedUser);
+        localStorage.setItem("autohub_user", JSON.stringify(updatedUser));
       }
       setOriginalData(dataToSave);
       setIsEditing(false);
@@ -139,6 +144,8 @@ export default function UserProfile() {
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -150,11 +157,11 @@ export default function UserProfile() {
           
           // Auto-save the image if we aren't currently editing
           if (!isEditing) {
-             handleSave(newData);
+             handleSave(newData, file);
           }
         }
       };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.readAsDataURL(file);
     }
   };
 

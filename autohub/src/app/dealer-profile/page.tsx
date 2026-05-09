@@ -5,6 +5,7 @@ import PageNavbar from "../../components/PageNavbar";
 import { useAuth } from "../../context/AuthContext";
 import { getProfile, updateProfile, getListings } from "../../lib/api";
 import { useSavedCars } from "../../context/SavedCarsContext";
+import { usePosts } from "../../context/PostsContext";
 import SavedCarsGrid from "../../components/SavedCarsGrid";
 import type { ProfileData } from "../../lib/api";
 import type { Listing } from "../../context/PostsContext";
@@ -12,11 +13,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function DealerProfile() {
-  const { isLoggedIn, logout, user, userRole } = useAuth();
+  const { isLoggedIn, logout, user, userRole, setAuth } = useAuth();
   const router = useRouter();
   const { savedCars } = useSavedCars();
+  const { deleteListing } = usePosts();
 
-  const [activeTab, setActiveTab] = useState<"listings" | "saved" | "reviews" | "settings">("listings");
+  const [activeTab, setActiveTab] = useState<"listings" | "saved" | "settings">("listings");
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [showSuccess, setShowSuccess] = useState(false);
@@ -38,6 +40,8 @@ export default function DealerProfile() {
 
   const [formData, setFormData] = useState<ProfileData>(defaultProfile);
   const [originalData, setOriginalData] = useState<ProfileData>(defaultProfile);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -70,8 +74,13 @@ export default function DealerProfile() {
         if (profileData.avatar) setAvatarSrc(profileData.avatar);
         if (profileData.cover) setCoverSrc(profileData.cover);
         
-        // Mock dealer's listings (since we don't have a specific endpoint, let's just grab the first 3 for demo)
-        setMyListings(listingsData.slice(0, 3));
+        // Filter listings to only show the ones belonging to this dealer
+        if (user?.id) {
+          const myCars = listingsData.filter(car => car.dealerId === user.id);
+          setMyListings(myCars);
+        } else {
+          setMyListings([]);
+        }
       })
       .finally(() => setLoading(false));
   }, [isLoggedIn, userRole]);
@@ -83,8 +92,15 @@ export default function DealerProfile() {
     }
     setSaving(true);
     try {
-      const updated = await updateProfile(formData);
+      const updated = await updateProfile(formData, avatarFile || undefined, coverFile || undefined);
       setOriginalData(updated);
+
+      if (user) {
+        const updatedUser = { ...user, name: updated.name, email: updated.email };
+        setAuth(updatedUser);
+        localStorage.setItem("autohub_user", JSON.stringify(updatedUser));
+      }
+
       setIsModalOpen(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3500);
@@ -106,6 +122,8 @@ export default function DealerProfile() {
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -114,12 +132,14 @@ export default function DealerProfile() {
           setFormData(prev => ({ ...prev, avatar: base64 }));
         }
       };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.readAsDataURL(file);
     }
   };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setCoverFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -128,13 +148,25 @@ export default function DealerProfile() {
           setFormData(prev => ({ ...prev, cover: base64 }));
         }
       };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.readAsDataURL(file);
     }
   };
 
   const handleLogout = async () => {
     await logout();
     router.push("/");
+  };
+
+  const handleDeleteListing = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    if (window.confirm("Are you sure you want to delete this listing?")) {
+      try {
+        await deleteListing(id);
+        setMyListings(prev => prev.filter(car => car.id !== id));
+      } catch (err: any) {
+        alert(err.message || "Failed to delete listing.");
+      }
+    }
   };
 
   if (!isLoggedIn) {
@@ -219,7 +251,6 @@ export default function DealerProfile() {
           <div className="stats-card">
             <div className="stat"><div className="sv">{myListings.length}</div><div className="sl">Listings</div></div>
             <div className="stat"><div className="sv">{savedCars.length}</div><div className="sl">Saved</div></div>
-            <div className="stat"><div className="sv">4.9★</div><div className="sl">Rating</div></div>
             <div className="stat"><div className="sv">98%</div><div className="sl">Response</div></div>
           </div>
 
@@ -236,7 +267,6 @@ export default function DealerProfile() {
           <div className="tabs-bar">
             <button className={`ptab ${activeTab === "listings" ? "active" : ""}`} onClick={() => setActiveTab("listings")}>🚗 My Listings</button>
             <button className={`ptab ${activeTab === "saved" ? "active" : ""}`} onClick={() => setActiveTab("saved")}>❤ Saved</button>
-            <button className={`ptab ${activeTab === "reviews" ? "active" : ""}`} onClick={() => setActiveTab("reviews")}>⭐ Reviews</button>
             <button className={`ptab ${activeTab === "settings" ? "active" : ""}`} onClick={() => setActiveTab("settings")}>⚙️ Settings</button>
           </div>
 
@@ -257,11 +287,23 @@ export default function DealerProfile() {
                         <img src={car.image} alt={car.name} />
                       </div>
                       <div className="cc-name">{car.name} <span>{car.year}</span></div>
-                      <div className="cc-price">{car.price}</div>
+                      <div className="cc-meta" style={{ fontSize: '0.85rem', color: '#888', marginBottom: '8px' }}>
+                        <span>👤 {car.dealerName || `${car.manufacturer} Dealer`}</span>
+                      </div>
+                      <div className="cc-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.2' }}>
+                        {car.isOffer && car.offerPrice ? (
+                          <>
+                            <span style={{ textDecoration: 'line-through', fontSize: '0.8em', opacity: 0.7, color: 'white' }}>{car.price}</span>
+                            <span style={{ color: '#dd0000' }}>{car.offerPrice}</span>
+                          </>
+                        ) : (
+                          <span>{car.price}</span>
+                        )}
+                      </div>
                       <div className="cc-meta">🔄 {car.mileage} • {car.location}</div>
                       <div className="cc-actions">
-                        <button className="cc-btn" onClick={(e) => e.preventDefault()}>Edit</button>
-                        <button className="cc-btn del" onClick={(e) => e.preventDefault()}>Delete</button>
+                        <button className="cc-btn" onClick={(e) => { e.preventDefault(); router.push(`/sell-car?edit=${car.id}`); }}>Edit</button>
+                        <button className="cc-btn del" onClick={(e) => handleDeleteListing(e, car.id)}>Delete</button>
                       </div>
                     </div>
                   </Link>
@@ -278,39 +320,7 @@ export default function DealerProfile() {
             <SavedCarsGrid />
           </div>
 
-          {/* REVIEWS (MOCK) */}
-          <div className={`tab-content ${activeTab === "reviews" ? "active" : "hidden"}`}>
-            <div className="reviews-summary">
-              <div className="rs-score">4.9</div>
-              <div className="rs-right">
-                <div className="stars-big">★★★★★</div>
-                <div className="rs-total">Based on 128 reviews</div>
-                <div className="rating-bars">
-                  <div className="rb-row"><span>5★</span><div className="rb"><div className="rbf" style={{width: "85%"}}></div></div><span>108</span></div>
-                  <div className="rb-row"><span>4★</span><div className="rb"><div className="rbf" style={{width: "10%"}}></div></div><span>13</span></div>
-                  <div className="rb-row"><span>3★</span><div className="rb"><div className="rbf" style={{width: "4%"}}></div></div><span>5</span></div>
-                  <div className="rb-row"><span>2★</span><div className="rb"><div className="rbf" style={{width: "1%"}}></div></div><span>2</span></div>
-                  <div className="rb-row"><span>1★</span><div className="rb"><div className="rbf" style={{width: "0%"}}></div></div><span>0</span></div>
-                </div>
-              </div>
-            </div>
-            <div className="reviews-list">
-               <div className="review-item">
-                  <div className="ri-av">S</div>
-                  <div>
-                    <div className="ri-name">Samir Ali <span className="ri-stars">★★★★★</span> <span className="ri-date">2 days ago</span></div>
-                    <div className="ri-text">Excellent dealer, very transparent about the car condition. Highly recommended!</div>
-                  </div>
-               </div>
-               <div className="review-item">
-                  <div className="ri-av">M</div>
-                  <div>
-                    <div className="ri-name">Mahmoud Youssef <span className="ri-stars">★★★★☆</span> <span className="ri-date">1 week ago</span></div>
-                    <div className="ri-text">Good communication, but the location was a bit far.</div>
-                  </div>
-               </div>
-            </div>
-          </div>
+
 
           {/* SETTINGS */}
           <div className={`tab-content ${activeTab === "settings" ? "active" : "hidden"}`}>

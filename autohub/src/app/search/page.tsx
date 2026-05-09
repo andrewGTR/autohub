@@ -8,6 +8,8 @@ import CarCard from "../../components/CarCard";
 import { unifiedSearch, LearningCar } from "../../lib/api";
 import { Listing } from "../../context/PostsContext";
 import Link from "next/link";
+import OffcanvasFilter from "../../components/OffcanvasFilter";
+import FiltersToggle from "../../components/FiltersToggle";
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -24,7 +26,82 @@ function SearchContent() {
       try {
         const results = await unifiedSearch(query);
         setLearningResults(results.learning);
-        setAdsResults(results.ads);
+        
+        // Apply filters to adsResults
+        let filteredAds = results.ads;
+        
+        const category = searchParams?.get("category");
+        if (category && category !== "all") {
+          filteredAds = filteredAds.filter((c) => c.category?.toLowerCase() === category.toLowerCase());
+        }
+        
+        const brand = searchParams?.get("brand");
+        if (brand) {
+          filteredAds = filteredAds.filter((c) => c.manufacturer?.toLowerCase() === brand.toLowerCase());
+        }
+        
+        const body = searchParams?.get("body");
+        if (body && body !== "all") {
+          filteredAds = filteredAds.filter((c) => c.body?.toLowerCase() === body.toLowerCase());
+        }
+        
+        const trans = searchParams?.get("transmission");
+        if (trans && trans !== "all") {
+          filteredAds = filteredAds.filter((c) => c.transmission?.toLowerCase() === trans.toLowerCase());
+        }
+        
+        const fuel = searchParams?.get("fuel");
+        if (fuel && fuel !== "all") {
+          filteredAds = filteredAds.filter((c) => c.fuelType?.toLowerCase() === fuel.toLowerCase());
+        }
+        
+        if (searchParams?.get("isOffer") === "true") {
+          filteredAds = filteredAds.filter((c) => c.isOffer);
+        }
+        
+        const parseNumber = (val?: string | number) => {
+          if (!val) return 0;
+          if (typeof val === "number") return val;
+          return parseInt(val.toString().replace(/[^0-9]/g, ""), 10) || 0;
+        };
+        
+        const priceMin = searchParams?.get("priceMin");
+        if (priceMin) {
+          const min = parseNumber(priceMin);
+          filteredAds = filteredAds.filter(c => (c.isOffer && c.offerPrice ? parseNumber(c.offerPrice) : parseNumber(c.price)) >= min);
+        }
+        
+        const priceMax = searchParams?.get("priceMax");
+        if (priceMax) {
+          const max = parseNumber(priceMax);
+          filteredAds = filteredAds.filter(c => (c.isOffer && c.offerPrice ? parseNumber(c.offerPrice) : parseNumber(c.price)) <= max);
+        }
+        
+        const yearMin = searchParams?.get("yearMin");
+        if (yearMin) {
+          const min = parseInt(yearMin, 10);
+          filteredAds = filteredAds.filter(c => (c.year || 0) >= min);
+        }
+        
+        const yearMax = searchParams?.get("yearMax");
+        if (yearMax) {
+          const max = parseInt(yearMax, 10);
+          filteredAds = filteredAds.filter(c => (c.year || 0) <= max);
+        }
+        
+        const kmMin = searchParams?.get("kmMin");
+        if (kmMin) {
+          const min = parseNumber(kmMin);
+          filteredAds = filteredAds.filter(c => parseNumber(c.mileage) >= min);
+        }
+        
+        const kmMax = searchParams?.get("kmMax");
+        if (kmMax) {
+          const max = parseNumber(kmMax);
+          filteredAds = filteredAds.filter(c => parseNumber(c.mileage) <= max);
+        }
+
+        setAdsResults(filteredAds);
       } catch (error) {
         console.error("Search failed", error);
       } finally {
@@ -33,7 +110,7 @@ function SearchContent() {
     }
     
     performSearch();
-  }, [query]);
+  }, [searchParams]);
 
   const showLearning = activeTab === "all" || activeTab === "learning";
   const showAds = activeTab === "all" || activeTab === "ads";
@@ -60,13 +137,20 @@ function SearchContent() {
           >
             Learning ({learningResults.length})
           </button>
-          <button 
-            className={`search-tab ${activeTab === "ads" ? "active" : ""}`}
-            onClick={() => setActiveTab("ads")}
-          >
-            Marketplace ({adsResults.length})
-          </button>
+            <button 
+              className={`search-tab ${activeTab === "ads" ? "active" : ""}`}
+              onClick={() => setActiveTab("ads")}
+            >
+              Marketplace ({adsResults.length})
+            </button>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+            <FiltersToggle />
+          </div>
         </div>
+
+        <OffcanvasFilter />
 
         {isLoading ? (
           <div style={{ textAlign: "center", padding: "60px 0" }}>Loading results...</div>

@@ -11,7 +11,7 @@ export default async function Home() {
   const listings = await getListings().catch(() => []);
 
   const recentlyAdded = listings.slice(0, 12);
-  const offers = listings.filter((l) => l.negotiable).slice(0, 12);
+  const offers = listings.filter((l) => l.isOffer).slice(0, 12);
 
   return (
     <main>

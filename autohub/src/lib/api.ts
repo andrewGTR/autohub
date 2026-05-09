@@ -98,8 +98,27 @@ function normalizeUser(
 
 /** Map a raw API post object → our internal Listing shape */
 function mapApiPostToListing(p: any): Listing {
+  let rawDesc = p.description ?? "";
+  let extractedIsOffer = false;
+  let extractedOfferPrice = "";
+  let extractedPayments: string[] = [];
+
+  const offerMatch = rawDesc.match(/\[OFFER:([0-9.]+)\]/);
+  if (offerMatch) {
+    extractedIsOffer = true;
+    extractedOfferPrice = offerMatch[1];
+    rawDesc = rawDesc.replace(offerMatch[0], "").trim();
+  }
+
+  const payMatch = rawDesc.match(/\[PAYMENTS:(.*?)\]/);
+  if (payMatch) {
+    extractedPayments = payMatch[1].split(",");
+    rawDesc = rawDesc.replace(payMatch[0], "").trim();
+  }
+
   return {
     id: String(p.id ?? p._id ?? Date.now()),
+    dealerId: p.dealer?._id ?? p.dealer?.id ?? (typeof p.dealer === "string" ? p.dealer : ""),
     name: p.title ?? `${p.brand ?? ""} ${p.model ?? ""}`.trim(),
     year: String(p.year ?? ""),
     category: p.condition ?? "Used",
@@ -109,6 +128,11 @@ function mapApiPostToListing(p: any): Listing {
     price:
       p.price != null
         ? `${Number(p.price).toLocaleString()} ${p.currency ?? "EGP"}`
+        : "",
+    isOffer: extractedIsOffer,
+    offerPrice:
+      extractedOfferPrice
+        ? `${Number(extractedOfferPrice).toLocaleString()} ${p.currency ?? "EGP"}`
         : "",
     image:
       Array.isArray(p.images) && p.images.length > 0
@@ -121,9 +145,12 @@ function mapApiPostToListing(p: any): Listing {
     body: p.bodyType ?? "",
     fuel: p.fuelType ?? "",
     color: p.color ?? "",
-    description: p.description ?? "",
+    description: rawDesc,
     negotiable: p.negotiable ?? false,
-    payments: Array.isArray(p.paymentOptions) ? p.paymentOptions : [],
+    dealerName: p.dealer?.name ?? "",
+    dealerAvatar: p.dealer?.avatar ?? "",
+    dealerPhone: p.dealer?.phone ?? p.contactPhone ?? "",
+    payments: extractedPayments.length > 0 ? extractedPayments : (Array.isArray(p.paymentOptions) ? p.paymentOptions : []),
     contactPhone: p.contactPhone ?? "",
   };
 }
@@ -222,11 +249,23 @@ export async function getProfile(): Promise<ProfileData> {
 }
 
 /** PUT /api/dealers/me/profile */
-export async function updateProfile(data: ProfileData): Promise<ProfileData> {
+export async function updateProfile(data: ProfileData, avatarFile?: File, coverFile?: File): Promise<ProfileData> {
+  const formData = new FormData();
+  if (data.name) formData.append("name", data.name);
+  if (data.email) formData.append("email", data.email);
+  if (data.location) formData.append("location", data.location);
+  if (data.phone) formData.append("phone", data.phone);
+  if (data.whatsapp) formData.append("whatsapp", data.whatsapp);
+  if (data.taxNumber) formData.append("taxNumber", data.taxNumber);
+  
+  if (avatarFile) formData.append("avatar", avatarFile);
+  if (coverFile) formData.append("cover", coverFile);
+
+  const token = getToken();
   const res = await fetch(`${API_BASE_URL}/dealers/me/profile`, {
     method: "PUT",
-    headers: authHeaders(),
-    body: JSON.stringify(data),
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
   });
   if (!res.ok) throw new Error("Failed to update profile");
   const updated = await res.json();
@@ -266,11 +305,23 @@ export async function getUserProfile(): Promise<ProfileData> {
 }
 
 /** PUT /api/users/me/profile (Best effort for regular users) */
-export async function updateUserProfile(data: ProfileData): Promise<ProfileData> {
+export async function updateUserProfile(data: ProfileData, avatarFile?: File, coverFile?: File): Promise<ProfileData> {
+  const formData = new FormData();
+  if (data.name) formData.append("name", data.name);
+  if (data.email) formData.append("email", data.email);
+  if (data.location) formData.append("location", data.location);
+  if (data.phone) formData.append("phone", data.phone);
+  if (data.whatsapp) formData.append("whatsapp", data.whatsapp);
+  if (data.taxNumber) formData.append("taxNumber", data.taxNumber);
+  
+  if (avatarFile) formData.append("avatar", avatarFile);
+  if (coverFile) formData.append("cover", coverFile);
+
+  const token = getToken();
   const res = await fetch(`${API_BASE_URL}/users/me/profile`, {
     method: "PUT",
-    headers: authHeaders(),
-    body: JSON.stringify(data),
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
   });
   if (!res.ok) throw new Error("Failed to update user profile");
   const updated = await res.json();
@@ -316,7 +367,16 @@ export async function createListing(
 ): Promise<Listing> {
   const formData = new FormData();
   formData.append("title", listing.name);
-  formData.append("description", listing.description);
+  
+  let desc = listing.description;
+  if (listing.isOffer && listing.offerPrice) {
+    desc += ` [OFFER:${listing.offerPrice.replace(/[^0-9.]/g, "")}]`;
+  }
+  if (listing.payments && listing.payments.length > 0) {
+    desc += ` [PAYMENTS:${listing.payments.join(",")}]`;
+  }
+  formData.append("description", desc);
+  
   formData.append("brand", listing.manufacturer);
   formData.append("model", listing.model ?? "");
   formData.append("bodyType", listing.body);
@@ -329,7 +389,6 @@ export async function createListing(
   formData.append("transmission", listing.transmission);
   formData.append("fuelType", listing.fuel);
   formData.append("contactPhone", listing.contactPhone ?? "");
-  listing.payments.forEach((p) => formData.append("paymentOptions", p));
   if (imageFiles?.length) {
     imageFiles.forEach((f) => formData.append("images", f));
   }
@@ -347,6 +406,70 @@ export async function createListing(
   const responseData = await res.json();
   const payload = responseData.data ?? responseData;
   return mapApiPostToListing(payload);
+}
+
+/** PUT /api/posts/:id */
+export async function updateListing(
+  id: string,
+  listing: Partial<Listing>,
+  imageFiles?: File[]
+): Promise<Listing> {
+  const formData = new FormData();
+  if (listing.name) formData.append("title", listing.name);
+  
+  if (listing.description !== undefined) {
+    let desc = listing.description;
+    if (listing.isOffer && listing.offerPrice) {
+      desc += ` [OFFER:${listing.offerPrice.replace(/[^0-9.]/g, "")}]`;
+    }
+    if (listing.payments && listing.payments.length > 0) {
+      desc += ` [PAYMENTS:${listing.payments.join(",")}]`;
+    }
+    formData.append("description", desc);
+  }
+  
+  if (listing.manufacturer) formData.append("brand", listing.manufacturer);
+  if (listing.model) formData.append("model", listing.model);
+  if (listing.body) formData.append("bodyType", listing.body);
+  if (listing.year) formData.append("year", listing.year.toString());
+  if (listing.mileage) formData.append("mileage", listing.mileage.replace(/[^0-9.]/g, ""));
+  if (listing.price) formData.append("price", listing.price.replace(/[^0-9.]/g, ""));
+  if (listing.category) formData.append("condition", listing.category);
+  if (listing.color) formData.append("color", listing.color);
+  if (listing.transmission) formData.append("transmission", listing.transmission);
+  if (listing.fuel) formData.append("fuelType", listing.fuel);
+  if (listing.contactPhone) formData.append("contactPhone", listing.contactPhone);
+  if (imageFiles?.length) {
+    imageFiles.forEach((f) => formData.append("images", f));
+  }
+
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}/posts/${id}`, {
+    method: "PUT", // or PATCH, try PUT first based on standard REST
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to update listing");
+  }
+  const responseData = await res.json();
+  const payload = responseData.data ?? responseData;
+  return mapApiPostToListing(payload);
+}
+
+/** DELETE /api/posts/:id */
+export async function deleteListingAPI(id: string): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}/posts/${id}`, {
+    method: "DELETE",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to delete listing");
+  }
 }
 
 // ─── UNIFIED SEARCH & LEARNING ────────────────────────────────

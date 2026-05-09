@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import Link from "next/link";
 import PageNavbar from "../../components/PageNavbar";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 interface Message {
   id: number | string;
@@ -25,6 +28,13 @@ interface ChatSession {
 }
 
 const API_BASE = "https://graduation-project-autohub-production.up.railway.app/api/ai";
+
+const cleanMarkdown = (text: string) => {
+  if (!text) return "";
+  let clean = text.replace(/\|\s*[\r\n]+\s*[\r\n]+\s*\|/g, '|\n|');
+  clean = clean.replace(/([^\n])\n\|/g, '$1\n\n|');
+  return clean;
+};
 
 export default function AiPage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // null = loading
@@ -252,6 +262,31 @@ export default function AiPage() {
     }
   };
 
+  const buildCompareTable = (cars: any[], summary: string) => {
+    if (!cars?.length) return '';
+    const fields = [
+      { key: 'price_range', label: 'Price Range' },
+      { key: 'engine', label: 'Engine' },
+      { key: 'fuel', label: 'Fuel' },
+      { key: 'reliability', label: 'Reliability' },
+      { key: 'pros', label: 'Pros', cls: 'compare-pros' },
+      { key: 'cons', label: 'Cons', cls: 'compare-cons' },
+      { key: 'verdict', label: 'Best for', rowCls: 'compare-verdict-row' },
+    ];
+    
+    const thead = `<tr><th class="compare-row-label"></th>${cars.map(c => `<th class="compare-car-col">${c.name || '?'}</th>`).join('')}</tr>`;
+    
+    const tbody = fields.map(f => {
+      const cells = cars.map(c => `<td class="compare-cell ${f.cls || ''}">${String(c[f.key] || '—').replace(/•/g, '\n<br>•')}</td>`).join('');
+      return `<tr class="${f.rowCls || ''}"><td class="compare-field-label">${f.label}</td>${cells}</tr>`;
+    }).join('');
+    
+    return `<div class="compare-wrap">
+      <div class="compare-scroll"><table class="compare-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table></div>
+      ${summary ? `<div class="compare-summary">💡 ${summary}</div>` : ''}
+    </div>`;
+  };
+
   const handleChipClick = (text: string) => {
     setInput(text);
     setTimeout(() => {
@@ -358,7 +393,13 @@ export default function AiPage() {
         }
 
         const data = result.data || result;
-        const msgText = data.reply || data.answer || data.message || 'Sorry, I could not get an answer.';
+        let msgText = data.reply || data.answer || data.message || 'Sorry, I could not get an answer.';
+        
+        // Clean double newlines inside markdown tables
+        msgText = msgText.replace(/\|\s*[\r\n]+\s*[\r\n]+\s*\|/g, '|\n|');
+        // Ensure table has blank line before it
+        msgText = msgText.replace(/([^\n])\n\|/g, '$1\n\n|');
+
         updateActiveSessionMessages(prev => [
           ...prev,
           { id: Date.now().toString(), role: "bot", type: "text", content: msgText, time: now() },
@@ -382,10 +423,23 @@ export default function AiPage() {
         }
 
         const data = result.data || result;
-        const msgText = data.reply || data.answer || data.message || 'Sorry, I could not get an answer.';
+        let msgText = data.reply || data.answer || data.message || 'Sorry, I could not get an answer.';
+        const intent = result.intent || data.intent;
+        
+        // Clean double newlines inside markdown tables
+        msgText = msgText.replace(/\|\s*[\r\n]+\s*[\r\n]+\s*\|/g, '|\n|');
+        // Ensure table has blank line before it
+        msgText = msgText.replace(/([^\n])\n\|/g, '$1\n\n|');
+        
+        let finalContent = msgText;
+        
+        if (intent === 'compare' && (result.compare_data?.length >= 2 || data.compare_data?.length >= 2)) {
+          finalContent = `\n\n${buildCompareTable(result.compare_data || data.compare_data, msgText)}\n\n`;
+        }
+
         updateActiveSessionMessages(prev => [
           ...prev,
-          { id: Date.now().toString(), role: "bot", type: "text", content: msgText, time: now() },
+          { id: Date.now().toString(), role: "bot", type: "text", content: finalContent, time: now() },
           { id: (Date.now() + 1).toString(), role: "bot", type: "chips", chips: ["Tell me more", "What about reliability?", "Compare with similar cars"], time: now() }
         ]);
       }
@@ -507,7 +561,7 @@ export default function AiPage() {
             <button className="ai-menu-btn" onClick={() => setIsSidebarOpen(true)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            <div className="ai-icon">
+            <div className="ai-page-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="#3a3aff" strokeWidth="1.8">
                 <path d="M5 17H3a2 2 0 01-2-2v-4a2 2 0 012-2h1l2-4h12l2 4h1a2 2 0 012 2v4a2 2 0 01-2 2h-2"/>
                 <circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/>
@@ -526,7 +580,29 @@ export default function AiPage() {
                 
                 {msg.type === "text" && (
                   <>
-                    <div className="ai-bubble" dangerouslySetInnerHTML={{ __html: msg.content || "" }} />
+                    <div className="ai-bubble">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
+                        components={{
+                          table: ({node, className, ...props}) => {
+                            return (
+                              <div className="compare-wrap">
+                                <div className="compare-scroll">
+                                  <table className={`compare-table ${className || ''}`} {...props} />
+                                </div>
+                              </div>
+                            );
+                          },
+                          thead: ({node, className, ...props}) => <thead className={className} {...props} />,
+                          tr: ({node, className, ...props}) => <tr className={className} {...props} />,
+                          th: ({node, className, ...props}) => <th className={className} {...props} />,
+                          td: ({node, className, ...props}) => <td className={className} {...props} />
+                        }}
+                      >
+                        {cleanMarkdown(msg.content || "")}
+                      </ReactMarkdown>
+                    </div>
                     <span className="ai-msg-time">{msg.time}</span>
                   </>
                 )}
