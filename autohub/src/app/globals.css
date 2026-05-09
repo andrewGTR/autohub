@@ -5368,7 +5368,7 @@ body {
   top: 0;
   left: -340px; /* Slide in from left */
   width: 320px;
-  height: 100vh;
+  bottom: 0; /* Replaces 100vh to fix mobile browser bar clipping */
   background: #ffffff;
   z-index: 9999;
   display: flex;
