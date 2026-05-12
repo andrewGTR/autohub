@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { CarModel, CarGeneration } from "../types/car";
-import { normalizeImagePath } from "../utils/carUtils";
+import { normalizeImagePath, getLocalGenImage } from "../utils/carUtils";
 import styles from "./BrandExplorer.module.css";
 
 interface BrandExplorerProps {
@@ -65,8 +65,7 @@ export default function BrandExplorer({ brandName, models }: BrandExplorerProps)
       <div className={styles.grid}>
         {filteredModels.map((model, index) => {
           const g0 = model.g[0] || {} as CarGeneration;
-          const rawImg = (g0.photos && g0.photos[0]) || g0.i || "";
-          const img = normalizeImagePath(rawImg);
+          const img = getLocalGenImage(g0);
 
           const descTotal = model.g.filter(g => g.desc).length;
 
@@ -102,7 +101,7 @@ export default function BrandExplorer({ brandName, models }: BrandExplorerProps)
               <div className={styles.cardImageWrapper}>
                 {img ? (
                   <img
-                    src={img.startsWith("http") ? img : `/${img}`}
+                    src={img}
                     alt={model.n}
                     className={styles.cardImage}
                     onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x200/f3f3f3/aaa?text=No+Image"; }}

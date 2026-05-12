@@ -6,6 +6,7 @@ import { API_BASE_URL } from "./config";
 import { Listing } from "../context/PostsContext";
 import { CAR_DATA } from "../data/cars";
 import { CarBrand, CarGeneration } from "../types/car";
+import { toLocalImage } from "../utils/carUtils";
 
 // ─── TYPES ───────────────────────────────────────────────────
 
@@ -486,15 +487,16 @@ export interface LearningCar {
   description: string;
 }
 
-/** Returns the first valid external photo URL from any generation of the model, or empty string. */
+/** Returns the local /images/... path for the best available photo across all generations. */
 function getModelImage(model: { g: CarGeneration[] }): string {
   for (const gen of model.g) {
-    // photos[] always contains absolute https:// URLs — prefer these
+    // Prefer photos[] (external URLs → converted to local /images/ paths)
     if (gen.photos && gen.photos.length > 0) {
-      const validPhoto = gen.photos.find((p) => p.startsWith("http"));
-      if (validPhoto) return validPhoto;
+      const first = gen.photos[0];
+      if (first) return toLocalImage(first);
     }
-    // g.i is a local file path (data\\images\\...) — skip it; it won't work in browser
+    // Fall back to i field (data\images\... local path → convert to /images/)
+    if (gen.i) return toLocalImage(gen.i);
   }
   return "";
 }
@@ -529,7 +531,7 @@ function buildLearningIndex(): LearningCar[] {
         year: g0.y ?? "",
         engine: firstEngine,
         hp,
-        image, // already a full https:// URL or empty string
+        image, // local /images/... path or empty string
         description: g0.desc ?? "",
       });
     });

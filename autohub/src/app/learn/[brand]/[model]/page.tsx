@@ -27,8 +27,8 @@ export default async function ModelLearnPage({ params }: PageProps) {
     notFound();
   }
 
-  // Find model data
-  const modelData = brandData.m.find(
+  // Find model data — brandData is guaranteed non-null here (notFound throws above)
+  const modelData = (brandData as NonNullable<typeof brandData>).m.find(
     (m) => m.n.toLowerCase() === decodedModel.toLowerCase()
   );
 
@@ -39,7 +39,7 @@ export default async function ModelLearnPage({ params }: PageProps) {
   return (
     <main>
       <PageNavbar />
-      <div style={{ paddingTop: "80px" }}>
+      <div>
         <div className="section" style={{ paddingBottom: "0" }}>
           <div style={{ marginBottom: "10px" }}>
             <a 
