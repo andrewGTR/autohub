@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SmoothImage from "./SmoothImage";
 
 const manufacturers = [
   { name: "Alfa Romeo", logo: "/icons/alfa_romeo.png", link: "/marketplace?brand=Alfa%20Romeo" },
@@ -45,7 +46,7 @@ export default function ManufacturerSection() {
         {manufacturers.map((mfr, index) => (
           <div className="mfr-item" key={index}>
             <Link className="mfr-item-a" href={mfr.link}>
-              <img className="mfr-logo" src={mfr.logo} alt={mfr.name} />
+              <SmoothImage className="mfr-logo" src={mfr.logo} alt={mfr.name} />
               {mfr.name}
             </Link>
           </div>

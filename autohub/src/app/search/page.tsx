@@ -10,6 +10,7 @@ import { Listing } from "../../context/PostsContext";
 import Link from "next/link";
 import OffcanvasFilter from "../../components/OffcanvasFilter";
 import FiltersToggle from "../../components/FiltersToggle";
+import SmoothImage from "../../components/SmoothImage";
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -152,7 +153,20 @@ function SearchContent() {
         <OffcanvasFilter />
 
         {isLoading ? (
-          <div style={{ textAlign: "center", padding: "60px 0" }}>Loading results...</div>
+          <div className="car-grid" style={{ marginTop: "24px" }}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="car-card" style={{ border: "1px solid var(--border)", padding: "0" }}>
+                <div style={{ height: "200px" }} className="skeleton skeleton-rect" />
+                <div style={{ padding: "16px" }}>
+                  <div className="skeleton skeleton-text medium" />
+                  <div className="skeleton skeleton-text short" style={{ marginBottom: "16px" }} />
+                  <div className="skeleton skeleton-text" />
+                  <div className="skeleton skeleton-text" />
+                  <div className="skeleton skeleton-text short" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <>
             {/* LEARNING SECTION */}
@@ -169,11 +183,11 @@ function SearchContent() {
                       <Link href={`/learn/${car.id}`} key={car.id} className="learning-card">
                         <div className="learning-card-img-wrapper">
                           {car.image ? (
-                            <img
+                            <SmoothImage
                               src={car.image}
                               alt={car.name}
                               className="learning-card-img"
-                              onError={(e) => {
+                              onError={(e: any) => {
                                 const target = e.currentTarget;
                                 target.style.display = "none";
                                 const placeholder = target.nextElementSibling as HTMLElement;
@@ -201,8 +215,8 @@ function SearchContent() {
                           </div>
                           <h3>{car.name}</h3>
                           <div className="learning-specs">
-                            {car.engine && <div className="spec-item">⚙️ {car.engine}</div>}
-                            {car.hp && <div className="spec-item">🐎 {car.hp}</div>}
+                            {car.engine && <div className="spec-item">{car.engine}</div>}
+                            {car.hp && <div className="spec-item">{car.hp}</div>}
                           </div>
                           <div className="view-btn">View Specifications →</div>
                         </div>
@@ -239,7 +253,25 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '100px 20px' }}>
+        <div className="skeleton skeleton-text medium" style={{ height: "40px", marginBottom: "16px", maxWidth: "400px" }} />
+        <div className="skeleton skeleton-text short" style={{ height: "20px", marginBottom: "40px" }} />
+        <div className="car-grid">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="car-card" style={{ border: "1px solid var(--border)", padding: "0" }}>
+              <div style={{ height: "200px" }} className="skeleton skeleton-rect" />
+              <div style={{ padding: "16px" }}>
+                <div className="skeleton skeleton-text medium" />
+                <div className="skeleton skeleton-text short" style={{ marginBottom: "16px" }} />
+                <div className="skeleton skeleton-text" />
+                <div className="skeleton skeleton-text" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    }>
       <SearchContent />
     </Suspense>
   );

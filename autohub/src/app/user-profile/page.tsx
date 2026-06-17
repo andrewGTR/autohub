@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import PageNavbar from "../../components/PageNavbar";
+import SmoothImage from "../../components/SmoothImage";
 import { useAuth } from "../../context/AuthContext";
 import { useSavedCars } from "../../context/SavedCarsContext";
 import SavedCarsGrid from "../../components/SavedCarsGrid";
@@ -174,10 +175,10 @@ export default function UserProfile() {
     return (
       <>
         <PageNavbar />
-        <div style={{ textAlign: "center", padding: "80px 20px", color: "#555" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🔒</div>
+        <div style={{ textAlign: "center", padding: "80px 20px", color: "var(--text-secondary)" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}></div>
           <h2 style={{ marginBottom: "12px" }}>You must be logged in to view this page.</h2>
-          <button className="btn-primary" style={{ background: "#1a1a2e", color: "#fff", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" }} onClick={() => router.push("/login")}>Go to Login</button>
+          <button className="btn-primary" style={{ background: "var(--subnav-bg)", color: "var(--background)", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" }} onClick={() => router.push("/login")}>Go to Login</button>
         </div>
       </>
     );
@@ -187,11 +188,11 @@ export default function UserProfile() {
     return (
       <>
         <PageNavbar />
-        <div style={{ textAlign: "center", padding: "80px 20px", color: "#555" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🚫</div>
+        <div style={{ textAlign: "center", padding: "80px 20px", color: "var(--text-secondary)" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}></div>
           <h2 style={{ marginBottom: "12px" }}>User account required.</h2>
           <p style={{ marginBottom: "20px", color: "#888" }}>This page is only accessible to regular users.</p>
-          <button style={{ background: "#1a1a2e", color: "#fff", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" }} onClick={() => router.push("/")}>Go Home</button>
+          <button style={{ background: "var(--subnav-bg)", color: "var(--background)", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" }} onClick={() => router.push("/")}>Go Home</button>
         </div>
       </>
     );
@@ -201,7 +202,20 @@ export default function UserProfile() {
     return (
       <>
         <PageNavbar />
-        <div style={{ textAlign: "center", padding: "80px 20px", color: "#aaa" }}>Loading profile...</div>
+        <div className="page-header">
+          <div className="skeleton skeleton-text medium" style={{ height: "40px", marginBottom: "8px", maxWidth: "200px", margin: "0 auto" }} />
+          <div className="skeleton skeleton-text" style={{ height: "20px", maxWidth: "300px", margin: "0 auto" }} />
+          <hr />
+        </div>
+        <div className="profile-wrapper" style={{ display: 'flex', gap: '32px', maxWidth: '1000px', margin: '40px auto', padding: '0 20px' }}>
+          <div className="profile-sidebar" style={{ width: '300px', flexShrink: 0 }}>
+            <div className="skeleton skeleton-rect" style={{ height: "250px", borderRadius: "12px", marginBottom: "20px" }} />
+            <div className="skeleton skeleton-text" style={{ height: "40px" }} />
+          </div>
+          <div className="profile-content" style={{ flex: 1 }}>
+            <div className="skeleton skeleton-rect" style={{ height: "400px", borderRadius: "12px" }} />
+          </div>
+        </div>
       </>
     );
   }
@@ -221,16 +235,16 @@ export default function UserProfile() {
         {/* LEFT: Avatar Card */}
         <div className="avatar-card">
           <div className="avatar-wrap" onClick={() => fileInputRef.current?.click()}>
-            <img src={avatarSrc} alt="Profile Photo" />
+            <SmoothImage src={avatarSrc} alt="Profile Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             <div className="avatar-overlay">
-              <span>📷</span>
+              <span></span>
               <span>Change Photo</span>
             </div>
             <input type="file" ref={fileInputRef} accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
           </div>
 
           <h2 className="avatar-name">{formData.name}</h2>
-          <p className="avatar-role">👤 Member</p>
+          <p className="avatar-role">Member</p>
           <p className="avatar-joined">Member since April 2024</p>
 
           <div className="avatar-stats">
@@ -254,14 +268,14 @@ export default function UserProfile() {
             <button
               onClick={() => setActiveTab("info")}
               style={{ padding: "10px 20px", border: "none", background: "transparent", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", borderBottom: activeTab === "info" ? "2px solid #1a1a2e" : "2px solid transparent", color: activeTab === "info" ? "#1a1a2e" : "#aaa", marginBottom: "-2px" }}
-            >👤 Personal Info</button>
+            >Personal Info</button>
             <button
               onClick={() => setActiveTab("saved")}
               style={{ padding: "10px 20px", border: "none", background: "transparent", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", borderBottom: activeTab === "saved" ? "2px solid #1a1a2e" : "2px solid transparent", color: activeTab === "saved" ? "#1a1a2e" : "#aaa", marginBottom: "-2px", display: "flex", alignItems: "center", gap: "6px" }}
             >
-              ❤ Saved Cars
+              Saved Cars
               {savedCars.length > 0 && (
-                <span style={{ background: "#1a1a2e", color: "#fff", borderRadius: "20px", fontSize: "0.7rem", padding: "1px 7px", fontWeight: 800 }}>
+                <span style={{ background: "var(--subnav-bg)", color: "var(--background)", borderRadius: "20px", fontSize: "0.7rem", padding: "1px 7px", fontWeight: 800 }}>
                   {savedCars.length}
                 </span>
               )}
@@ -274,12 +288,12 @@ export default function UserProfile() {
               <div className="info-header">
                 <h3>Personal Information</h3>
                 <button className={`btn-edit ${isEditing ? "active" : ""}`} onClick={isEditing ? undefined : () => setIsEditing(true)}>
-                  {isEditing ? "✏️ Editing..." : "✏️ Edit"}
+                  {isEditing ? "Editing..." : "Edit"}
                 </button>
               </div>
               <div className="info-form">
                 {["name", "email", "phone", "location"].map((field) => {
-                  const icons: Record<string, string> = { name: "👤", email: "✉️", phone: "📞", location: "📍" };
+                  const icons: Record<string, string> = { name: "", email: "", phone: "", location: "" };
                   const labels: Record<string, string> = { name: "Full Name", email: "Email Address", phone: "Phone Number", location: "Location" };
                   return (
                     <div key={field} className="field-group">
@@ -294,7 +308,7 @@ export default function UserProfile() {
                           disabled={!isEditing}
                         />
                       </div>
-                      {field === "location" && <a className="map-link" href={mapLink} target="_blank">🗺️ View on Map</a>}
+                      {field === "location" && <a className="map-link" href={mapLink} target="_blank">View on Map</a>}
                     </div>
                   );
                 })}
@@ -302,12 +316,12 @@ export default function UserProfile() {
               {isEditing && (
                 <div className="form-actions">
                   <button className="btn-save" onClick={handleSave} disabled={saving}>
-                    {saving ? "Saving..." : "💾 Save Changes"}
+                    {saving ? "Saving..." : "Save Changes"}
                   </button>
-                  <button className="btn-cancel" onClick={handleCancel}>✕ Cancel</button>
+                  <button className="btn-cancel" onClick={handleCancel}>Cancel</button>
                 </div>
               )}
-              {showSuccess && <div className="success-msg">✅ Profile updated successfully!</div>}
+              {showSuccess && <div className="success-msg">Profile updated successfully!</div>}
             </>
           )}
 

@@ -51,7 +51,7 @@ export default function Login() {
 
           {error && (
             <div style={{ color: "#e33", fontSize: "0.85rem", textAlign: "center", padding: "6px 0" }}>
-              ⚠️ {error}
+              {error}
             </div>
           )}
 

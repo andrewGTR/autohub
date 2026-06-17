@@ -16,7 +16,7 @@ export default function CarSection({ title, cars, showDivider }: CarSectionProps
         </div>
         {cars.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: "#aaa", fontSize: "0.95rem" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "10px" }}>🚗</div>
+            <div style={{ fontSize: "2.5rem", marginBottom: "10px" }}></div>
             <p>No listings yet. Check back soon!</p>
           </div>
         ) : (

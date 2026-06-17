@@ -3,12 +3,18 @@ import PageNavbar from "../../components/PageNavbar";
 import AllBrandsExplorer from "../../components/AllBrandsExplorer";
 import { CarBrand } from "../../types/car";
 import { getTotalGenerations } from "../../utils/carUtils";
+import { getBrandCoverUrl } from "../../services/imageService";
 
 const brands = CAR_DATA as CarBrand[];
 const totalModels = brands.reduce((a, b) => a + b.m.length, 0);
 const totalGenerations = brands.reduce((a, b) => a + getTotalGenerations(b), 0);
 
 export default function LearnPage() {
+  const coverUrls: Record<string, string> = {};
+  brands.forEach(b => {
+    coverUrls[b.n] = getBrandCoverUrl(b.n);
+  });
+
   return (
     <main>
       <PageNavbar />
@@ -38,7 +44,7 @@ export default function LearnPage() {
             <h1 style={{
               fontSize: "clamp(2rem, 5vw, 3.2rem)",
               fontWeight: "900",
-              color: "#fff",
+              color: "var(--background)",
               marginBottom: "16px",
               lineHeight: "1.15",
               letterSpacing: "-0.02em",
@@ -71,7 +77,7 @@ export default function LearnPage() {
                   textAlign: "center",
                   minWidth: "100px",
                 }}>
-                  <div style={{ fontWeight: "900", fontSize: "1.4rem", color: "#fff" }}>{stat.label}</div>
+                  <div style={{ fontWeight: "900", fontSize: "1.4rem", color: "var(--background)" }}>{stat.label}</div>
                   <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.55)", textTransform: "uppercase", marginTop: "2px" }}>{stat.sub}</div>
                 </div>
               ))}
@@ -80,7 +86,7 @@ export default function LearnPage() {
         </div>
 
         {/* ── All Brands Explorer ── */}
-        <AllBrandsExplorer brands={brands} />
+        <AllBrandsExplorer brands={brands} coverUrls={coverUrls} />
 
       </div>
     </main>

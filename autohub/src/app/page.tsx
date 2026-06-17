@@ -18,7 +18,7 @@ export default async function Home() {
       <Header />
       <Hero />
       <CarCarousel title="Recently Added" cars={recentlyAdded} showDivider={true} />
-      <CarCarousel title="Offers" cars={offers} showDivider={false} badge="🔥 Hot Deals" />
+      <CarCarousel title="Offers" cars={offers} showDivider={false} badge="Hot Deals" />
       <AiSection />
       <ManufacturerSection />
     </main>

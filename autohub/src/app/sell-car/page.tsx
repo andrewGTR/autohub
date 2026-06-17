@@ -178,7 +178,7 @@ export default function SellCar() {
     }
 
     if (errors.length > 0) {
-      alert("⚠️ Please fill: " + errors.join(", "));
+      alert("Please fill: " + errors.join(", "));
       return;
     }
 
@@ -193,7 +193,7 @@ export default function SellCar() {
   // ── Submit ───────────────────────────────────────────────────
   const submitForm = async () => {
     if (!agreed) {
-      alert("⚠️ Please agree to the Terms & Conditions");
+      alert("Please agree to the Terms & Conditions");
       return;
     }
     setSubmitting(true);
@@ -228,7 +228,7 @@ export default function SellCar() {
       setShowSuccess(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e: any) {
-      alert("❌ " + (e.message || "Failed to publish listing. Please try again."));
+      alert("" + (e.message || "Failed to publish listing. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -272,7 +272,7 @@ export default function SellCar() {
         {/* SUCCESS */}
         {showSuccess && (
           <div className="success-screen">
-            <div className="success-icon">🎉</div>
+            <div className="success-icon"></div>
             <h2>{isEditing ? "Listing Updated!" : "Listing Published!"}</h2>
             <p>Your car has been {isEditing ? "updated" : "listed"} successfully. Buyers can now find it on Auto Hub.</p>
             <div className="success-actions">
@@ -292,7 +292,7 @@ export default function SellCar() {
 
             <div className="upload-area" onClick={() => fileInputRef.current?.click()}>
               <input type="file" ref={fileInputRef} multiple accept="image/*" style={{ display: "none" }} onChange={handleImageUpload} />
-              <div className="upload-icon">📷</div>
+              <div className="upload-icon"></div>
               <div className="upload-text">Click to upload photos</div>
               <div className="upload-sub">JPG, PNG, WEBP · Max 10 photos</div>
             </div>
@@ -300,9 +300,9 @@ export default function SellCar() {
             <div className="img-preview-grid">
               {imagePreviews.map((src, i) => (
                 <div key={i} className="prev-img">
-                  <img src={src} alt={`car photo ${i + 1}`} />
+                  <img loading="lazy" src={src} alt={`car photo ${i + 1}`} />
                   {i === 0 && <div className="cover-badge">Cover</div>}
-                  <button className="del-btn" onClick={() => removeImage(i)}>✕</button>
+                  <button className="del-btn" onClick={() => removeImage(i)}></button>
                 </div>
               ))}
             </div>
@@ -369,8 +369,8 @@ export default function SellCar() {
               <div className="field">
                 <label>Condition <span className="req">*</span></label>
                 <div className="toggle-group">
-                  <button className={`tgl ${condition === "New" ? "active" : ""}`} onClick={() => setCondition("New")}>🆕 New</button>
-                  <button className={`tgl ${condition === "Used" ? "active" : ""}`} onClick={() => setCondition("Used")}>🔧 Used</button>
+                  <button className={`tgl ${condition === "New" ? "active" : ""}`} onClick={() => setCondition("New")}>New</button>
+                  <button className={`tgl ${condition === "Used" ? "active" : ""}`} onClick={() => setCondition("Used")}>Used</button>
                 </div>
               </div>
 
@@ -445,8 +445,8 @@ export default function SellCar() {
               <div className="field">
                 <label>Offer / Discount Price</label>
                 <div className="toggle-group">
-                  <button className={`tgl ${isOffer ? "active" : ""}`} onClick={() => setIsOffer(true)}>✅ Enabled</button>
-                  <button className={`tgl ${!isOffer ? "active" : ""}`} onClick={() => setIsOffer(false)}>❌ Disabled</button>
+                  <button className={`tgl ${isOffer ? "active" : ""}`} onClick={() => setIsOffer(true)}>Enabled</button>
+                  <button className={`tgl ${!isOffer ? "active" : ""}`} onClick={() => setIsOffer(false)}>Disabled</button>
                 </div>
               </div>
 
@@ -464,8 +464,8 @@ export default function SellCar() {
               <div className="field">
                 <label>Is the price negotiable?</label>
                 <div className="toggle-group">
-                  <button className={`tgl ${negotiable ? "active" : ""}`} onClick={() => setNegotiable(true)}>✅ Yes</button>
-                  <button className={`tgl ${!negotiable ? "active" : ""}`} onClick={() => setNegotiable(false)}>❌ No</button>
+                  <button className={`tgl ${negotiable ? "active" : ""}`} onClick={() => setNegotiable(true)}>Yes</button>
+                  <button className={`tgl ${!negotiable ? "active" : ""}`} onClick={() => setNegotiable(false)}>No</button>
                 </div>
               </div>
 
@@ -495,7 +495,7 @@ export default function SellCar() {
               <div className="field full">
                 <label>Contact Phone <span className="req">*</span></label>
                 <div className="input-wrap">
-                  <span className="prefix">📞</span>
+                  <span className="prefix"></span>
                   <input type="tel" placeholder="e.g. +20 100 123 4567" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
                 </div>
               </div>
@@ -549,7 +549,7 @@ export default function SellCar() {
                 <div className="review-card full">
                   <div className="rc-label">Photos ({imagePreviews.length})</div>
                   <div className="review-imgs">
-                    {imagePreviews.map((src, idx) => <img key={idx} src={src} alt="photo" />)}
+                    {imagePreviews.map((src, idx) => <img loading="lazy" key={idx} src={src} alt="photo" />)}
                   </div>
                 </div>
               )}
@@ -565,7 +565,7 @@ export default function SellCar() {
             <div className="section-nav">
               <button className="btn-back" onClick={() => prevSection(4)}>← Edit</button>
               <button className="btn-submit" onClick={submitForm} disabled={submitting}>
-                {submitting ? (isEditing ? "Updating..." : "Publishing...") : (isEditing ? "📝 Update Listing" : "🚀 Publish Listing")}
+                {submitting ? (isEditing ? "Updating..." : "Publishing...") : (isEditing ? "Update Listing" : "Publish Listing")}
               </button>
             </div>
           </div>

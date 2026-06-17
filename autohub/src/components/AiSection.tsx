@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SmoothImage from "./SmoothImage";
 
 export default function AiSection() {
   return (
@@ -15,7 +16,7 @@ export default function AiSection() {
       <div className="ai-right">
         <div className="ai-feature">
           <div className="ai-icon">
-            <img src="/icons/chatbot-icon.png" alt="Chatbot" />
+            <SmoothImage src="/icons/chatbot-icon.png" alt="Chatbot" />
           </div>
           <h3>Use turbo bot</h3>
           <p>
@@ -24,14 +25,14 @@ export default function AiSection() {
         </div>
         <div className="ai-feature">
           <div className="ai-icon">
-            <img src="/icons/qustion.png" alt="Question" />
+            <SmoothImage src="/icons/qustion.png" alt="Question" />
           </div>
           <h3>Answer the questions</h3>
           <p>The chatbot asks questions, analyzes your answers, and recommends the best car options for you.</p>
         </div>
         <div className="ai-feature">
           <div className="ai-icon">
-            <img src="/icons/camera.png" alt="Camera" />
+            <SmoothImage src="/icons/camera.png" alt="Camera" />
           </div>
           <h3>Use Auto Detector</h3>
           <p>Capture any car with your camera and let our AI instantly identify its make and model.</p>

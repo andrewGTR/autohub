@@ -31,7 +31,7 @@ export default function CarCard({ car }: { car: Listing }) {
             </div>
           )}
           {car.image ? (
-            <img
+            <img loading="lazy"
               src={car.image}
               alt={car.name}
               onError={(e) => {

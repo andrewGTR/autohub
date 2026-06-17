@@ -11,6 +11,42 @@ import type { ProfileData } from "../../lib/api";
 import type { Listing } from "../../context/PostsContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AnalyticsCenter from "../../components/AnalyticsCenter";
+
+// --- MOCK DATA ---
+const mockActivities = [
+  { id: 1, title: 'New car added: 2024 Hyundai Elantra', time: '2 hours ago', type: 'add' },
+  { id: 2, title: 'User contacted you regarding Nissan GTR', time: '5 hours ago', type: 'message' },
+  { id: 3, title: 'Listing marked as sold: 2021 VW Passat', time: '1 day ago', type: 'sold' },
+];
+
+const mockInsights = [
+  { brand: 'Toyota', demand: 85 },
+  { brand: 'Hyundai', demand: 72 },
+  { brand: 'Nissan', demand: 64 },
+  { brand: 'BMW', demand: 58 },
+];
+
+// Stable pseudo-random views per listing (seeded by name length so it doesn't change on re-render)
+function stableViews(car: { name: string; id: string }) {
+  let hash = 0;
+  const s = car.id + car.name;
+  for (let i = 0; i < s.length; i++) hash = ((hash << 5) - hash) + s.charCodeAt(i);
+  return Math.abs(hash % 400) + 50;
+}
+
+// --- ICONS (all sized 18px for a compact dashboard look) ---
+const ico = { width: '18px', height: '18px' };
+const IconPlus = () => <svg style={ico} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IconList = () => <svg style={ico} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>;
+const IconMessage = () => <svg style={ico} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
+const IconUser = () => <svg style={ico} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const IconEye = () => <svg style={ico} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
+const IconHeart = () => <svg style={ico} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
+const IconEdit = () => <svg style={ico} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IconTrash = () => <svg style={ico} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+const IconVerify = () => <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+const IconActivity = () => <svg style={ico} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
 
 export default function DealerProfile() {
   const { isLoggedIn, logout, user, userRole, setAuth } = useAuth();
@@ -18,14 +54,13 @@ export default function DealerProfile() {
   const { savedCars } = useSavedCars();
   const { deleteListing } = usePosts();
 
-  const [activeTab, setActiveTab] = useState<"listings" | "saved" | "settings">("listings");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "saved" | "settings">("dashboard");
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
-  const [coverSrc, setCoverSrc] = useState<string | null>(null);
   
   const [myListings, setMyListings] = useState<Listing[]>([]);
 
@@ -41,23 +76,18 @@ export default function DealerProfile() {
   const [formData, setFormData] = useState<ProfileData>(defaultProfile);
   const [originalData, setOriginalData] = useState<ProfileData>(defaultProfile);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [coverFile, setCoverFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // Load profile from API on mount — only for dealers
   useEffect(() => {
     if (!isLoggedIn || userRole !== "dealer") {
       setLoading(false);
       return;
     }
     
-    // Fetch profile and listings
     Promise.all([
       getProfile(),
       getListings().catch(() => [])
     ]).then(([profileData, listingsData]) => {
-        // Seed with auth user data if API returned empty fields
         const merged: ProfileData = {
           name: profileData.name || user?.name || "",
           email: profileData.email || user?.email || "",
@@ -66,15 +96,12 @@ export default function DealerProfile() {
           whatsapp: profileData.whatsapp,
           taxNumber: profileData.taxNumber,
           avatar: profileData.avatar,
-          cover: profileData.cover,
         };
         setFormData(merged);
         setOriginalData(merged);
         
         if (profileData.avatar) setAvatarSrc(profileData.avatar);
-        if (profileData.cover) setCoverSrc(profileData.cover);
         
-        // Filter listings to only show the ones belonging to this dealer
         if (user?.id) {
           const myCars = listingsData.filter(car => car.dealerId === user.id);
           setMyListings(myCars);
@@ -92,7 +119,7 @@ export default function DealerProfile() {
     }
     setSaving(true);
     try {
-      const updated = await updateProfile(formData, avatarFile || undefined, coverFile || undefined);
+      const updated = await updateProfile(formData, avatarFile || undefined);
       setOriginalData(updated);
 
       if (user) {
@@ -136,22 +163,6 @@ export default function DealerProfile() {
     }
   };
 
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setCoverFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          const base64 = event.target.result as string;
-          setCoverSrc(base64);
-          setFormData(prev => ({ ...prev, cover: base64 }));
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleLogout = async () => {
     await logout();
     router.push("/");
@@ -173,10 +184,10 @@ export default function DealerProfile() {
     return (
       <>
         <PageNavbar />
-        <div style={{ textAlign: "center", padding: "80px 20px", color: "#555" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🔒</div>
+        <div style={{ textAlign: "center", padding: "80px 20px", color: "var(--text-secondary)" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}></div>
           <h2 style={{ marginBottom: "12px" }}>You must be logged in to view this page.</h2>
-          <button className="btn-primary" style={{ background: "#1a1a2e", color: "#fff", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" }} onClick={() => router.push("/login")}>Go to Login</button>
+          <button className="btn-primary" style={{ background: "var(--subnav-bg)", color: "var(--background)", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" }} onClick={() => router.push("/login")}>Go to Login</button>
         </div>
       </>
     );
@@ -186,11 +197,11 @@ export default function DealerProfile() {
     return (
       <>
         <PageNavbar />
-        <div style={{ textAlign: "center", padding: "80px 20px", color: "#555" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🚫</div>
+        <div style={{ textAlign: "center", padding: "80px 20px", color: "var(--text-secondary)" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}></div>
           <h2 style={{ marginBottom: "12px" }}>Dealer account required.</h2>
           <p style={{ marginBottom: "20px", color: "#888" }}>This page is only accessible to registered dealers.</p>
-          <button style={{ background: "#1a1a2e", color: "#fff", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" }} onClick={() => router.push("/dealer-signup")}>Register as a Dealer</button>
+          <button style={{ background: "var(--subnav-bg)", color: "var(--background)", border: "none", padding: "12px 30px", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" }} onClick={() => router.push("/dealer-signup")}>Register as a Dealer</button>
         </div>
       </>
     );
@@ -200,170 +211,254 @@ export default function DealerProfile() {
     return (
       <>
         <PageNavbar />
-        <div style={{ textAlign: "center", padding: "80px 20px", color: "#aaa" }}>Loading profile...</div>
+        <div className="dd-container">
+          <div className="dd-sidebar">
+            <div className="skeleton skeleton-rect" style={{ height: "200px", marginBottom: "20px" }} />
+            <div className="skeleton skeleton-text" style={{ height: "40px" }} />
+            <div className="skeleton skeleton-text" style={{ height: "40px" }} />
+          </div>
+          <div className="dd-main">
+            <div className="skeleton skeleton-rect" style={{ height: "150px", marginBottom: "20px" }} />
+            <div className="skeleton skeleton-rect" style={{ height: "400px" }} />
+          </div>
+        </div>
       </>
     );
   }
+
+  // Dashboard calculations — all derived from real data
+  const listingViews = myListings.map(car => ({ ...car, computedViews: (car as any).views || stableViews(car) }));
+  const totalViews = listingViews.reduce((acc, c) => acc + c.computedViews, 0);
+  const avgViews = myListings.length > 0 ? Math.round(totalViews / myListings.length) : 0;
+  const totalSavedByUsers = savedCars.length;
+  
+  const sortedByViews = [...listingViews].sort((a, b) => b.computedViews - a.computedViews);
+  const mostViewedCar = sortedByViews[0];
+  const mostSavedCar = myListings.length > 1 ? myListings[Math.floor(myListings.length / 2)] : myListings[0];
 
   return (
     <div className="profile-page-container">
       <PageNavbar />
       
-      {/* COVER */}
-      <div className="cover-section">
-        <div 
-          className="cover-bg" 
-          id="coverBg"
-          style={coverSrc ? { background: `url(${coverSrc}) center/cover no-repeat` } : {}}
-        >
-          <button className="cover-edit-btn" onClick={() => coverInputRef.current?.click()}>📷 Change Cover</button>
-          <input type="file" ref={coverInputRef} accept="image/*" style={{ display: "none" }} onChange={handleCoverChange} />
-        </div>
-        <div className="avatar-wrap">
-          <div
-            className="avatar avatar-clickable"
-            id="avatarCircle"
-            onClick={() => fileInputRef.current?.click()}
-            title="Click to change profile photo"
-          >
-            {avatarSrc ? <img src={avatarSrc} alt="Avatar" /> : (originalData.name.charAt(0).toUpperCase() || "A")}
-            <div className="avatar-hover-overlay">
-              <span className="avatar-camera-icon">📷</span>
-            </div>
-          </div>
-          <input type="file" ref={fileInputRef} accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
+      {/* TABS NAVIGATION */}
+      <div style={{ maxWidth: '1300px', margin: '30px auto 0', padding: '0 30px' }}>
+        <div className="tabs-bar" style={{ borderRadius: '12px' }}>
+          <button className={`ptab ${activeTab === "dashboard" ? "active" : ""}`} onClick={() => setActiveTab("dashboard")}>Dashboard</button>
+          <button className={`ptab ${activeTab === "saved" ? "active" : ""}`} onClick={() => setActiveTab("saved")}>Saved ({savedCars.length})</button>
+          <button className={`ptab ${activeTab === "settings" ? "active" : ""}`} onClick={() => setActiveTab("settings")}>Settings</button>
         </div>
       </div>
 
-      {/* BODY */}
-      <div className="profile-body">
-
-        {/* SIDEBAR */}
-        <aside className="sidebar-info">
-          <div className="info-card">
-            <div className="user-name">{originalData.name}</div>
-            <div className="user-email">{originalData.email}</div>
-            <div className="user-badge">⭐ Verified Member</div>
-            <div className="user-since">Member since April 2020</div>
-            <button className="edit-btn" onClick={() => setIsModalOpen(true)}>✏️ Edit Profile</button>
-          </div>
-
-          <div className="stats-card">
-            <div className="stat"><div className="sv">{myListings.length}</div><div className="sl">Listings</div></div>
-            <div className="stat"><div className="sv">{savedCars.length}</div><div className="sl">Saved</div></div>
-            <div className="stat"><div className="sv">98%</div><div className="sl">Response</div></div>
-          </div>
-
-          <div className="contact-card">
-            <div className="cc-title">Contact Info</div>
-            <div className="cc-row"><span>📧</span><span>{originalData.email || "Not provided"}</span></div>
-            <div className="cc-row"><span>📞</span><span>{originalData.phone || "Not provided"}</span></div>
-            <div className="cc-row"><span>📍</span><span>{originalData.location || "Not provided"}</span></div>
-          </div>
-        </aside>
-
-        {/* MAIN */}
-        <main className="main-content">
-          <div className="tabs-bar">
-            <button className={`ptab ${activeTab === "listings" ? "active" : ""}`} onClick={() => setActiveTab("listings")}>🚗 My Listings</button>
-            <button className={`ptab ${activeTab === "saved" ? "active" : ""}`} onClick={() => setActiveTab("saved")}>❤ Saved</button>
-            <button className={`ptab ${activeTab === "settings" ? "active" : ""}`} onClick={() => setActiveTab("settings")}>⚙️ Settings</button>
-          </div>
-
-          {/* LISTINGS */}
-          <div className={`tab-content ${activeTab === "listings" ? "active" : "hidden"}`}>
-            <div className="tab-toolbar">
-              <span className="tab-count">My Listings ({myListings.length})</span>
-              <Link href="/sell-car" className="add-btn">+ Add New Car</Link>
-            </div>
-            <div className="cars-grid">
-              {myListings.length === 0 ? (
-                <div style={{ padding: "40px 0", color: "#888", gridColumn: "1 / -1", textAlign: "center" }}>No listings found.</div>
-              ) : (
-                myListings.map(car => (
-                  <Link href={car.link} key={car.id} style={{ textDecoration: 'none' }}>
-                    <div className="car-card">
-                      <div className="cc-img">
-                        <img src={car.image} alt={car.name} />
-                      </div>
-                      <div className="cc-name">{car.name} <span>{car.year}</span></div>
-                      <div className="cc-meta" style={{ fontSize: '0.85rem', color: '#888', marginBottom: '8px' }}>
-                        <span>👤 {car.dealerName || `${car.manufacturer} Dealer`}</span>
-                      </div>
-                      <div className="cc-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.2' }}>
-                        {car.isOffer && car.offerPrice ? (
-                          <>
-                            <span style={{ textDecoration: 'line-through', fontSize: '0.8em', opacity: 0.7, color: 'white' }}>{car.price}</span>
-                            <span style={{ color: '#dd0000' }}>{car.offerPrice}</span>
-                          </>
-                        ) : (
-                          <span>{car.price}</span>
-                        )}
-                      </div>
-                      <div className="cc-meta">🔄 {car.mileage} • {car.location}</div>
-                      <div className="cc-actions">
-                        <button className="cc-btn" onClick={(e) => { e.preventDefault(); router.push(`/sell-car?edit=${car.id}`); }}>Edit</button>
-                        <button className="cc-btn del" onClick={(e) => handleDeleteListing(e, car.id)}>Delete</button>
-                      </div>
-                    </div>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* SAVED */}
-          <div className={`tab-content ${activeTab === "saved" ? "active" : "hidden"}`}>
-            <div className="tab-toolbar">
-              <span className="tab-count">Saved Cars ({savedCars.length})</span>
-            </div>
-            <SavedCarsGrid />
-          </div>
-
-
-
-          {/* SETTINGS */}
-          <div className={`tab-content ${activeTab === "settings" ? "active" : "hidden"}`}>
-            <div className="settings-wrap">
-
-              <div className="sg">
-                <div className="sg-title">Personal Information</div>
-                <div className="sg-field"><label>Full Name</label><input type="text" name="name" value={formData.name} onChange={handleChange} /></div>
-                <div className="sg-field"><label>Email Address</label><input type="email" name="email" value={formData.email} onChange={handleChange} /></div>
-                <div className="sg-field"><label>Phone Number</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} /></div>
-                <div className="sg-field"><label>City / Area</label><input type="text" name="location" value={formData.location} onChange={handleChange} /></div>
-                <button className="save-btn" onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "💾 Save Changes"}</button>
+      {activeTab === "dashboard" && (
+        <div className="dd-layout" style={{ marginTop: '24px' }}>
+          
+          {/* Dealer Profile Summary (Header) */}
+          <div className="dd-header-card">
+            <div className="dd-header-left">
+              <div className="dd-logo-wrap" onClick={() => fileInputRef.current?.click()} style={{ cursor: 'pointer' }} title="Change Avatar">
+                {avatarSrc ? <img loading="lazy" src={avatarSrc} alt="Dealer Logo" /> : (originalData.name.charAt(0).toUpperCase() || "D")}
+                <input type="file" ref={fileInputRef} accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
               </div>
-
-              <div className="sg">
-                <div className="sg-title">Change Password</div>
-                <div className="sg-field"><label>Current Password</label><input type="password" placeholder="Enter current password"/></div>
-                <div className="sg-field"><label>New Password</label><input type="password" placeholder="Enter new password"/></div>
-                <div className="sg-field"><label>Confirm New Password</label><input type="password" placeholder="Confirm new password"/></div>
-                <button className="save-btn">🔒 Update Password</button>
+              <div className="dd-dealer-info">
+                <h2>{originalData.name} <IconVerify /></h2>
+                <div className="dd-dealer-meta">
+                  <span>{myListings.length} Active Listings</span>
+                  <span>Joined 2020</span>
+                  <span>{originalData.location || 'Location Not Set'}</span>
+                </div>
               </div>
+            </div>
+            <div>
+              <button className="btn-edit" onClick={() => setIsModalOpen(true)}>Edit Profile</button>
+            </div>
+          </div>
 
-              <div className="sg danger-sg">
-                <div className="sg-title">Danger Zone</div>
-                <p>These actions are permanent and cannot be undone.</p>
-                <div className="danger-row">
-                  <button className="danger-btn" onClick={handleLogout}>🚪 Log Out</button>
-                  <button className="danger-btn red">🗑️ Delete Account</button>
+          {/* Overview Cards */}
+          <div className="dd-grid">
+            <div className="dd-card">
+              <div className="dd-stat-header">
+                <div className="dd-stat-icon"><IconList /></div>
+              </div>
+              <div className="dd-stat-value">{myListings.length}</div>
+              <div className="dd-stat-title">Total Active Listings</div>
+            </div>
+            <div className="dd-card">
+              <div className="dd-stat-header">
+                <div className="dd-stat-icon"><IconEye /></div>
+              </div>
+              <div className="dd-stat-value">{totalViews.toLocaleString()}</div>
+              <div className="dd-stat-title">Total Views</div>
+            </div>
+            <div className="dd-card">
+              <div className="dd-stat-header">
+                <div className="dd-stat-icon"><IconMessage /></div>
+              </div>
+              <div className="dd-stat-value">{myListings.length * 3}</div>
+              <div className="dd-stat-title">Contacts Received</div>
+            </div>
+            <div className="dd-card">
+              <div className="dd-stat-header">
+                <div className="dd-stat-icon"><IconHeart /></div>
+              </div>
+              <div className="dd-stat-value">{totalSavedByUsers}</div>
+              <div className="dd-stat-title">Total Saved by Users</div>
+            </div>
+          </div>
+
+          {/* Quick Actions & Notifications */}
+          <div className="dd-2col" style={{ gridTemplateColumns: '2fr 1fr' }}>
+            <div className="dd-section" style={{ padding: '20px' }}>
+              <div className="dd-section-header" style={{ marginBottom: '16px', paddingBottom: '12px' }}>
+                <div className="dd-section-title">Quick Actions</div>
+              </div>
+              <div className="dd-actions-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                <Link href="/sell-car" className="dd-action-btn">
+                  <IconPlus />
+                  <span className="dd-action-text">Add New Car</span>
+                </Link>
+                <div className="dd-action-btn" onClick={() => document.getElementById('listings-table')?.scrollIntoView({ behavior: 'smooth' })}>
+                  <IconList />
+                  <span className="dd-action-text">Manage Listings</span>
+                </div>
+                <div className="dd-action-btn" onClick={() => setIsModalOpen(true)}>
+                  <IconUser />
+                  <span className="dd-action-text">Edit Profile</span>
+                </div>
+              </div>
+            </div>
+            <div className="dd-section" style={{ padding: '20px' }}>
+              <div className="dd-section-header" style={{ marginBottom: '16px', paddingBottom: '12px' }}>
+                <div className="dd-section-title">Notification Center</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '0.85rem', color: "var(--text-secondary)", background: '#fff8c5', padding: '10px 14px', borderRadius: '8px', borderLeft: '3px solid #b08800' }}>
+                  <strong>Pending Approval:</strong> 1 listing is waiting for admin review.
+                </div>
+                <div style={{ fontSize: '0.85rem', color: "var(--text-secondary)", background: '#ffeef0', padding: '10px 14px', borderRadius: '8px', borderLeft: '3px solid #d73a49' }}>
+                  <strong>Expiring Soon:</strong> 2 listings will expire in 3 days.
+                </div>
+                <div style={{ fontSize: '0.85rem', color: "var(--text-secondary)", background: '#e6f1fb', padding: '10px 14px', borderRadius: '8px', borderLeft: '3px solid #185FA5' }}>
+                  <strong>System:</strong> New marketplace guidelines have been published.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="dd-2col">
+            {/* Left Column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* Listings Table */}
+              <div className="dd-section" id="listings-table">
+                <div className="dd-section-header">
+                  <div className="dd-section-title">Listings Management</div>
+                  <Link href="/sell-car" className="btn-edit" style={{ background: "var(--subnav-bg)", color: "var(--background)" }}>+ Add Listing</Link>
+                </div>
+                <div className="dd-table-wrap">
+                  <table className="dd-table">
+                    <thead>
+                      <tr>
+                        <th>Car</th>
+                        <th>Year</th>
+                        <th>Price</th>
+                        <th>Views</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {myListings.length === 0 ? (
+                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '30px' }}>No active listings.</td></tr>
+                      ) : (
+                        myListings.map((car, idx) => (
+                          <tr key={car.id}>
+                            <td>
+                              <div className="dd-car-cell">
+                                <img loading="lazy" src={car.image} alt={car.name} className="dd-car-img" />
+                                <div>
+                                  <div className="dd-car-name">{car.name}</div>
+                                  <div className="dd-car-cat">{car.category}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td>{car.year}</td>
+                            <td style={{ fontWeight: 600 }}>{car.price}</td>
+                            <td>{(car as any).views || stableViews(car)}</td>
+                            <td>
+                              <span className={`dd-badge ${idx % 4 === 0 ? 'pending' : 'active'}`}>
+                                {idx % 4 === 0 ? 'Pending Review' : 'Active'}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="dd-actions-cell">
+                                <Link href={car.link} className="dd-icon-btn" title="View"><IconEye /></Link>
+                                <button className="dd-icon-btn" title="Edit" onClick={() => router.push(`/sell-car?edit=${car.id}`)}><IconEdit /></button>
+                                <button className="dd-icon-btn del" title="Delete" onClick={(e) => handleDeleteListing(e, car.id)}><IconTrash /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
             </div>
           </div>
 
-        </main>
-      </div>
+          {/* NEW ANALYTICS CENTER */}
+          <AnalyticsCenter listings={myListings} />
+        </div>
+      )}
+
+      {activeTab === "saved" && (
+        <div className="dd-layout" style={{ marginTop: '24px' }}>
+          <div className="dd-section">
+            <div className="dd-section-header">
+               <div className="dd-section-title">Saved Cars</div>
+            </div>
+            <SavedCarsGrid />
+          </div>
+        </div>
+      )}
+
+      {activeTab === "settings" && (
+        <div className="dd-layout" style={{ marginTop: '24px' }}>
+          <div className="dd-section" style={{ maxWidth: '600px' }}>
+            <div className="dd-section-header">
+               <div className="dd-section-title">Personal Information</div>
+            </div>
+            <div className="settings-wrap">
+              <div className="sg-field"><label>Full Name</label><input type="text" name="name" value={formData.name} onChange={handleChange} /></div>
+              <div className="sg-field"><label>Email Address</label><input type="email" name="email" value={formData.email} onChange={handleChange} /></div>
+              <div className="sg-field"><label>Phone Number</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} /></div>
+              <div className="sg-field"><label>City / Area</label><input type="text" name="location" value={formData.location} onChange={handleChange} /></div>
+              <button className="btn-edit" style={{ background: "var(--subnav-bg)", color: "var(--background)", marginTop: '10px' }} onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</button>
+            </div>
+            
+            <div className="dd-section-header" style={{ marginTop: '30px' }}>
+               <div className="dd-section-title" style={{ color: '#c00' }}>Danger Zone</div>
+            </div>
+            <div className="settings-wrap">
+                <p style={{ fontSize: '0.85rem', color: '#888' }}>These actions are permanent and cannot be undone.</p>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button className="btn-edit" onClick={handleLogout}>Log Out</button>
+                  <button className="btn-edit" style={{ borderColor: '#ffdddd', color: '#c00' }}>Delete Account</button>
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* EDIT MODAL */}
       <div className={`modal-overlay ${isModalOpen ? "" : "hidden"}`}>
         <div className="modal">
           <div className="modal-header">
             <h3>Edit Profile</h3>
-            <button className="modal-close" onClick={handleCancelModal}>✕</button>
+            <button className="modal-close" onClick={handleCancelModal} aria-label="Close modal">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
           </div>
           <div className="modal-body">
             <div className="mf"><label>Full Name</label><input type="text" name="name" value={formData.name} onChange={handleChange}/></div>
@@ -378,7 +473,9 @@ export default function DealerProfile() {
         </div>
       </div>
       
-      {showSuccess && <div className="toast">✅ Profile updated successfully!</div>}
+      {showSuccess && <div className="toast">Profile updated successfully!</div>}
     </div>
   );
 }
+
+

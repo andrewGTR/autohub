@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { CarModel, CarGeneration } from "../types/car";
-import { normalizeImagePath, getLocalGenImage } from "../utils/carUtils";
+import ModelPreviewImage from "./ModelPreviewImage";
 import styles from "./BrandExplorer.module.css";
 
 interface BrandExplorerProps {
@@ -65,7 +65,6 @@ export default function BrandExplorer({ brandName, models }: BrandExplorerProps)
       <div className={styles.grid}>
         {filteredModels.map((model, index) => {
           const g0 = model.g[0] || {} as CarGeneration;
-          const img = getLocalGenImage(g0);
 
           const descTotal = model.g.filter(g => g.desc).length;
 
@@ -99,21 +98,13 @@ export default function BrandExplorer({ brandName, models }: BrandExplorerProps)
             >
               {/* Image */}
               <div className={styles.cardImageWrapper}>
-                {img ? (
-                  <img
-                    src={img}
-                    alt={model.n}
-                    className={styles.cardImage}
-                    onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x200/f3f3f3/aaa?text=No+Image"; }}
-                  />
-                ) : (
-                  <div className={styles.noImage}>
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1">
-                      <rect x="2" y="7" width="20" height="11" rx="2"/><path d="M4 7l2-3h12l2 3"/>
-                      <circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>
-                    </svg>
-                  </div>
-                )}
+                <ModelPreviewImage
+                  brand={brandName}
+                  model={model.n}
+                  year={g0.y || ""}
+                  alt={model.n}
+                  className={styles.cardImage}
+                />
 
                 {/* Hover overlay */}
                 <div className={styles.hoverOverlay}>

@@ -196,7 +196,7 @@ export default function CarDetails() {
       >
         {/* Background image — click to open lightbox */}
         {images.length > 0 ? (
-          <img
+          <img loading="lazy"
             key={curImg}
             src={images[curImg]}
             alt={car.name}
@@ -263,7 +263,7 @@ export default function CarDetails() {
               onClick={() => { goTo(i); openLightbox(i); }}
               title="Click to view full size"
             >
-              <img src={src} alt={`View ${i + 1}`} onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }} />
+              <img loading="lazy" src={src} alt={`View ${i + 1}`} onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }} />
             </div>
           ))}
         </div>
@@ -387,7 +387,7 @@ export default function CarDetails() {
           <div className="cd-seller-card">
             <div className="cd-sc-top">
               {car.dealerAvatar ? (
-                <img src={car.dealerAvatar} alt={sellerName} className="cd-sc-av" style={{ objectFit: 'cover' }} />
+                <img loading="lazy" src={car.dealerAvatar} alt={sellerName} className="cd-sc-av" style={{ objectFit: 'cover' }} />
               ) : (
                 <div className="cd-sc-av">{sellerInitial}</div>
               )}
@@ -427,7 +427,7 @@ export default function CarDetails() {
 
           {/* Image */}
           <div className="cd-lb-img-wrap" onClick={(e) => e.stopPropagation()}>
-            <img
+            <img loading="lazy"
               src={images[lightboxIdx]}
               alt={`${car.name} — image ${lightboxIdx + 1}`}
               className="cd-lb-img"
@@ -459,7 +459,7 @@ export default function CarDetails() {
                   className={`cd-lb-thumb${i === lightboxIdx ? " active" : ""}`}
                   onClick={() => setLightboxIdx(i)}
                 >
-                  <img src={src} alt={`thumb ${i + 1}`} />
+                  <img loading="lazy" src={src} alt={`thumb ${i + 1}`} />
                 </div>
               ))}
             </div>

@@ -514,8 +514,9 @@ function buildLearningIndex(): LearningCar[] {
       const g0: CarGeneration | undefined = model.g[0];
       if (!g0) return;
 
-      // Always use a real external https:// URL — search all generations
-      const image = getModelImage(model);
+      // Use our new dynamic endpoint that redirects to Cloudinary
+      // The local images folder was deleted, so we must fetch via Cloudinary on the fly
+      const image = `/api/images/cover?brand=${encodeURIComponent(brand.n)}&model=${encodeURIComponent(model.n)}`;
 
       const firstEngine = g0.mods?.[0]?.engine ?? "";
       const hp = g0.hp

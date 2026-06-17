@@ -59,7 +59,7 @@ export default function SavedCarsGrid() {
                 </div>
               )}
               {car.image ? (
-                <img
+                <img loading="lazy"
                   src={car.image}
                   alt={car.name}
                   onError={(e) => {

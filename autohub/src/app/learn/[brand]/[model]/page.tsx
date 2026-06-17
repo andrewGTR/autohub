@@ -44,7 +44,7 @@ export default async function ModelLearnPage({ params }: PageProps) {
           <div style={{ marginBottom: "10px" }}>
             <a 
               href={`/learn/${decodedBrand}`} 
-              style={{ color: "#3a3aff", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "5px" }}
+              style={{ color: "var(--primary)", textDecoration: "none", fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "5px" }}
             >
               ← Back to {decodedBrand}
             </a>

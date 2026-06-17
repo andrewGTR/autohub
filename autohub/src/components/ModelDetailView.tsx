@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { CarModel, CarGeneration, CarModification, CarPrice } from "../types/car";
-import { getLocalGenImage, getLocalGenPhotos } from "../utils/carUtils";
+import SmoothImage from "./SmoothImage";
 import styles from "./ModelDetailView.module.css";
 
 interface ModelDetailViewProps {
@@ -15,11 +15,37 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
   const [activeGenIndex, setActiveGenIndex] = useState(0);
   const gen = model.g[activeGenIndex];
 
-  const photos = gen ? getLocalGenPhotos(gen) : [];
-  const heroImg = gen ? getLocalGenImage(gen) : "";
-  const [activePhoto, setActivePhoto] = useState(heroImg);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [activePhoto, setActivePhoto] = useState<string>("");
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  useEffect(() => {
+    if (!gen) return;
+    let isMounted = true;
+    setLoadingPhotos(true);
+    setPhotos([]);
+    setActivePhoto("");
+
+    const fetchPhotos = async () => {
+      try {
+        const res = await fetch(`/api/images/gallery?brand=${encodeURIComponent(brandName)}&model=${encodeURIComponent(modelName)}&year=${encodeURIComponent(gen.y || "")}`);
+        const data = await res.json();
+        if (isMounted && data.images) {
+          setPhotos(data.images);
+          if (data.images.length > 0) setActivePhoto(data.images[0]);
+        }
+      } catch (e) {
+        console.error("Failed to fetch gallery:", e);
+      } finally {
+        if (isMounted) setLoadingPhotos(false);
+      }
+    };
+
+    fetchPhotos();
+    return () => { isMounted = false; };
+  }, [brandName, modelName, gen]);
 
   // Keyboard navigation for lightbox
   const handleKey = useCallback((e: KeyboardEvent) => {
@@ -72,12 +98,12 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
             style={{
               position: "absolute", top: 20, right: 24,
               background: "rgba(255,255,255,0.12)", border: "none",
-              color: "#fff", fontSize: "1.6rem", width: 44, height: 44,
+              color: "var(--background)", fontSize: "1.6rem", width: 44, height: 44,
               borderRadius: "50%", cursor: "pointer", display: "flex",
               alignItems: "center", justifyContent: "center",
               backdropFilter: "blur(6px)",
             }}
-          >✕</button>
+          ></button>
 
           {/* Counter */}
           <div style={{
@@ -93,7 +119,7 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
               onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + photos.length) % photos.length); }}
               style={{
                 position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)",
-                background: "rgba(255,255,255,0.12)", border: "none", color: "#fff",
+                background: "rgba(255,255,255,0.12)", border: "none", color: "var(--background)",
                 fontSize: "1.8rem", width: 50, height: 50, borderRadius: "50%",
                 cursor: "pointer", display: "flex", alignItems: "center",
                 justifyContent: "center", backdropFilter: "blur(6px)",
@@ -102,7 +128,7 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
           )}
 
           {/* Main lightbox image */}
-          <img
+          <SmoothImage
             src={photos[lightboxIndex] || ""}
             alt={`Photo ${lightboxIndex + 1}`}
             onClick={e => e.stopPropagation()}
@@ -112,7 +138,7 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
               boxShadow: "0 8px 60px rgba(0,0,0,0.7)",
               userSelect: "none",
             }}
-            onError={e => { (e.target as HTMLImageElement).src = "https://placehold.co/800x500/222/555?text=No+Image"; }}
+            onError={(e: any) => { (e.target as HTMLImageElement).src = "https://placehold.co/800x500/222/555?text=No+Image"; }}
           />
 
           {/* Next arrow */}
@@ -121,7 +147,7 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
               onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % photos.length); }}
               style={{
                 position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)",
-                background: "rgba(255,255,255,0.12)", border: "none", color: "#fff",
+                background: "rgba(255,255,255,0.12)", border: "none", color: "var(--background)",
                 fontSize: "1.8rem", width: 50, height: 50, borderRadius: "50%",
                 cursor: "pointer", display: "flex", alignItems: "center",
                 justifyContent: "center", backdropFilter: "blur(6px)",
@@ -151,7 +177,7 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
                     transition: "opacity 0.2s, border-color 0.2s",
                   }}
                 >
-                  <img src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <SmoothImage src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
               ))}
             </div>
@@ -166,7 +192,6 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
             key={idx}
             onClick={() => {
               setActiveGenIndex(idx);
-              setActivePhoto(getLocalGenImage(g));
             }}
             className={`${styles.tabButton} ${activeGenIndex === idx ? styles.activeTab : ""}`}
           >
@@ -184,23 +209,38 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
             onClick={() => openLightbox(activePhoto)}
             title="Click to view fullscreen"
           >
-            <img
-              src={activePhoto || "/images/placeholder.jpg"}
-              alt={gen.n}
-              className={styles.mainImage}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://placehold.co/800x500/f0f0f5/aaa?text=No+Image+Available";
-              }}
-            />
+            {loadingPhotos ? (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f0f5' }}>
+                 <div style={{ width: '32px', height: '32px', border: '3px solid #ccc', borderTopColor: '#3a3aff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              </div>
+            ) : activePhoto ? (
+              <SmoothImage
+                src={activePhoto}
+                alt={gen.n}
+                className={styles.mainImage}
+                onError={(e: any) => {
+                  (e.target as HTMLImageElement).src = "https://placehold.co/800x500/f0f0f5/aaa?text=No+Image+Available";
+                }}
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f0f5', color: '#bbb', flexDirection: 'column', gap: '8px' }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                  <rect x="2" y="7" width="20" height="11" rx="2"/><path d="M4 7l2-3h12l2 3"/>
+                  <circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>
+                </svg>
+                <span style={{ fontSize: '0.8rem' }}>No image available</span>
+              </div>
+            )}
             {/* Zoom hint overlay */}
             <div style={{
               position: "absolute", bottom: 10, right: 10,
-              background: "rgba(0,0,0,0.45)", color: "#fff",
+              background: "rgba(0,0,0,0.45)", color: "var(--background)",
               fontSize: "0.72rem", fontWeight: 700, padding: "4px 10px",
               borderRadius: 20, pointerEvents: "none", letterSpacing: "0.4px",
               backdropFilter: "blur(4px)",
             }}>
-              🔍 Click to expand
+              Click to expand
             </div>
           </div>
 
@@ -214,10 +254,10 @@ export default function ModelDetailView({ brandName, modelName, model }: ModelDe
                   className={`${styles.thumbnail} ${activePhoto === p ? styles.activeThumbnail : ""}`}
                   title="Click to preview · Double-click to expand"
                 >
-                  <img
+                  <SmoothImage
                     src={p}
                     alt={`Thumbnail ${idx + 1}`}
-                    onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0"; }}
+                    onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0"; }}
                   />
                 </div>
               ))}

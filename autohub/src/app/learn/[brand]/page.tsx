@@ -3,57 +3,12 @@ import PageNavbar from "../../../components/PageNavbar";
 import BrandExplorer from "../../../components/BrandExplorer";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import SmoothImage from "../../../components/SmoothImage";
 import { CarBrand } from "../../../types/car";
 import { getTotalGenerations } from "../../../utils/carUtils";
 import styles from "./page.module.css";
 
-// Map brand name → cover image in /covers/
-const BRAND_COVERS: Record<string, string> = {
-  "Alfa Romeo":  "/covers/alfa%20romeo-cover.png",
-  "Audi":        "/covers/Audi_A4.jpg",
-  "BMW":         "/covers/bmw-cover.jpg",
-  "Chery":       "",
-  "Chevrolet":   "/covers/chevorlet-cover.jpg",
-  "Chrysler":    "/covers/Chrysler-cover.jpg",
-  "Citroen":     "/covers/citroin-cover.jpeg",
-  "Cupra":       "/covers/cupra-cover.jpg",
-  "Dacia":       "/covers/dacia-cover.jpg",
-  "Dodge":       "/covers/dodge-cover.jpg",
-  "Fiat":        "/covers/Fiat-cover.jpg",
-  "Ford":        "/covers/ford-cover.jpg",
-  "Honda":       "/covers/Honda-cover.jpg",
-  "Hyundai":     "/covers/Hyundai-cover.jpg",
-  "Infiniti":    "/covers/infiniti-cover.jpg",
-  "Isuzu":       "/covers/isuzu-cover.jpg",
-  "Jaguar":      "/covers/jaguar-cover.jpg",
-  "Jeep":        "/covers/jeep-cover.jpg",
-  "Kia":         "/covers/kia-cover.jpg",
-  "Lada":        "/covers/lada-cover.jpg",
-  "Land Rover":  "/covers/land%20rover-cover.jpg",
-  "Lexus":       "/covers/lexus-cover.jpg",
-  "Mazda":       "/covers/mazda-cover.jpg",
-  "Mercedes":    "/covers/mercedes-cover.jpg",
-  "Mini":        "/covers/mini-cover.jpg",
-  "Mitsubishi":  "/covers/mitsobishi-cover.jpg",
-  "Nissan":      "/covers/nissan-cover.jpg",
-  "Opel":        "/covers/opel-cover.jpg",
-  "Peugeot":     "/covers/PEUGEOT-cover.jpg",
-  "Porsche":     "/covers/porsche-cover.jpg",
-  "Renault":     "/covers/renault-cover.jpg",
-  "Rover":       "/covers/rover-cover.jpg",
-  "Saab":        "/covers/saab-cover.jpg",
-  "Seat":        "/covers/seat-cover.webp",
-  "Skoda":       "/covers/skoda-cover.jpg",
-  "Smart":       "/covers/smart-cover.jpg",
-  "Subaru":      "/covers/Subaru-cover.jpg",
-  "Suzuki":      "/covers/suzuki-cover.jpg",
-  "Tesla":       "/covers/tesla-cover.jpeg",
-  "Toyota":      "/covers/Toyota-cover.png",
-  "Volkswagen":  "/covers/volkswagen-cover.jpg",
-  "Volvo":       "/covers/volvo-cover.jpg",
-  "SAAB":        "/covers/saab-cover.jpg",
-  "Lada (VAZ)":  "/covers/Lada%20%28VAZ%29-cover.jpg",
-};
+import { getBrandCoverUrl } from "../../../services/imageService";
 
 interface PageProps {
   params: Promise<{
@@ -112,7 +67,7 @@ export default async function BrandLearnPage({ params }: PageProps) {
   const totalModels = brandData.m.length;
   const totalGens   = getTotalGenerations(brandData);
   const iconPath = BRAND_ICONS[decodedBrand] || "";
-  const coverImg = BRAND_COVERS[decodedBrand] || "";
+  const coverImg = getBrandCoverUrl(decodedBrand) || "";
 
   return (
     <main>
@@ -141,7 +96,7 @@ export default async function BrandLearnPage({ params }: PageProps) {
             <div className={styles.brandRow}>
               {iconPath && (
                 <div className={styles.brandLogo}>
-                  <img src={iconPath} alt={decodedBrand} />
+                  <SmoothImage src={iconPath} alt={decodedBrand} />
                 </div>
               )}
               <div>

@@ -79,7 +79,7 @@ export default function CarCarousel({ title, cars, showDivider, badge }: CarCaro
         {/* Cards */}
         {cars.length === 0 ? (
           <div className="carousel-empty">
-            <div className="carousel-empty-icon">🚗</div>
+            <div className="carousel-empty-icon"></div>
             <p>No listings yet. Check back soon!</p>
           </div>
         ) : (

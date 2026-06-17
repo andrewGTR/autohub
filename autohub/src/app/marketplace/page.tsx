@@ -119,7 +119,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
         <div className="brand-hero">
           <div className="brand-top">
             <div className="brand-img-box">
-              <img src="/0122908588v1.jpeg" alt="Nissan HQ" />
+              <img loading="lazy" src="/0122908588v1.jpeg" alt="Nissan HQ" />
             </div>
           </div>
           <div className="brand-desc">
@@ -145,7 +145,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
           </div>
           {filteredCars.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 0", color: "#aaa" }}>
-              <div style={{ fontSize: "3rem", marginBottom: "12px" }}>🚗</div>
+              <div style={{ fontSize: "3rem", marginBottom: "12px" }}></div>
               <p style={{ fontSize: "1rem" }}>No listings found.</p>
               <p style={{ fontSize: "0.85rem", marginTop: "6px" }}>Try adjusting your filters or check back soon!</p>
             </div>

@@ -16,17 +16,15 @@ export function toLocalImage(raw: string): string {
   if (!raw) return "";
 
   // Already a local Next.js public path
-  if (raw.startsWith("/images/") || raw.startsWith("/icons/")) return raw;
+  if (raw.startsWith("/images/") || raw.startsWith("/icons/") || raw.startsWith("/covers/")) return raw;
 
-  // External autoabc.lv CDN or any http URL
-  // e.g. https://img.autoabc.lv/Alfa-Romeo-145/Alfa-Romeo-145_1994_Hecbeks_...jpg
+  // If it's still an external URL (meaning we didn't have it locally), just use it as is
   if (raw.startsWith("http")) {
-    const filename = raw.split("/").pop() || "";
-    return filename ? `/images/${filename}` : "";
+    return raw;
   }
 
-  // Local data\images\ path from CAR_DATA "i" field
-  // e.g. data\\images\\Alfa-Romeo-145_1994_Hecbeks_...jpg
+  // Local data\images\ path from CAR_DATA "i" field that wasn't migrated
+  // Fallback to /images/filename.jpg
   const normalised = raw.replace(/\\/g, "/");
   const filename = normalised.split("/").pop() || "";
   return filename ? `/images/${filename}` : "";
