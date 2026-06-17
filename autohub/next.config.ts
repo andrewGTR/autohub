@@ -11,10 +11,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    outputFileTracingIncludes: {
-      '/api/car-images': ['./public/**/*'],
-    },
+  outputFileTracingIncludes: {
+    '/api/car-images': ['./public/**/*'],
   },
 };
 
