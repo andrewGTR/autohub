@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    outputFileTracingIncludes: {
+      '/api/car-images': ['./public/**/*'],
+    },
+  },
 };
 
 export default nextConfig;
