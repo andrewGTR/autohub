@@ -58,10 +58,10 @@ export default function CarCard({ car }: { car: Listing }) {
           {car.name} <span>{car.year}</span>
         </h3>
         <small className="category">{car.category}</small>
-        <div className="car-info">🔄 {car.mileage}</div>
-        <div className="car-info">⚙️ {car.transmission}</div>
-        <div className="car-info">📍 {car.location}</div>
-        <div className="car-info" style={{ color: '#3a3aff', fontWeight: 'bold' }}>👤 {car.dealerName || `${car.manufacturer} Dealer`}</div>
+        <div className="car-info">{car.mileage}</div>
+        <div className="car-info">{car.transmission}</div>
+        <div className="car-info">{car.location}</div>
+        <div className="car-info" style={{ color: '#3a3aff', fontWeight: 'bold' }}>{car.dealerName || `${car.manufacturer} Dealer`}</div>
         <div className="price-btn" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {car.isOffer && car.offerPrice ? (
             <>

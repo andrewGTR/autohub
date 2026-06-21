@@ -343,7 +343,9 @@ export async function updateUserProfile(data: ProfileData, avatarFile?: File, co
 
 /** GET /api/posts */
 export async function getListings(): Promise<Listing[]> {
-  const res = await fetch(`${API_BASE_URL}/posts`);
+  const isServer = typeof window === "undefined";
+  const url = isServer ? `${API_BASE_URL}/posts` : `/api/posts`;
+  const res = await fetch(url, { next: { revalidate: 0 } });
   if (!res.ok) throw new Error("Failed to fetch listings");
   const data = await res.json();
   const payload = data.data ?? data;
@@ -395,7 +397,7 @@ export async function createListing(
   }
 
   const token = getToken();
-  const res = await fetch(`${API_BASE_URL}/posts`, {
+  const res = await fetch(`/api/posts`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,

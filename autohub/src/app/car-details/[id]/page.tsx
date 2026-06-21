@@ -147,7 +147,7 @@ export default function CarDetails() {
       <>
         <PageNavbar />
         <div className="cd-error">
-          <div className="cd-error-icon">🚗</div>
+          <div className="cd-error-icon"></div>
           <h2>{error || "Car not found"}</h2>
           <Link href="/" className="cd-back-btn">← Back to Home</Link>
         </div>
@@ -278,19 +278,19 @@ export default function CarDetails() {
           {/* Quick facts bar */}
           <div className="cd-facts-bar">
             {car.mileage && (
-              <><div className="cd-fact"><span className="cd-fi">🔄</span><div><div className="cd-fv">{car.mileage}</div><div className="cd-fl">Mileage</div></div></div><div className="cd-fsep" /></>
+              <><div className="cd-fact"><span className="cd-fi"></span><div><div className="cd-fv">{car.mileage}</div><div className="cd-fl">Mileage</div></div></div><div className="cd-fsep" /></>
             )}
             {car.transmission && (
-              <><div className="cd-fact"><span className="cd-fi">⚙️</span><div><div className="cd-fv">{car.transmission}</div><div className="cd-fl">Transmission</div></div></div><div className="cd-fsep" /></>
+              <><div className="cd-fact"><span className="cd-fi"></span><div><div className="cd-fv">{car.transmission}</div><div className="cd-fl">Transmission</div></div></div><div className="cd-fsep" /></>
             )}
             {car.fuel && (
-              <><div className="cd-fact"><span className="cd-fi">⛽</span><div><div className="cd-fv">{car.fuel}</div><div className="cd-fl">Fuel</div></div></div><div className="cd-fsep" /></>
+              <><div className="cd-fact"><span className="cd-fi"></span><div><div className="cd-fv">{car.fuel}</div><div className="cd-fl">Fuel</div></div></div><div className="cd-fsep" /></>
             )}
             {car.color && (
-              <><div className="cd-fact"><span className="cd-fi">🎨</span><div><div className="cd-fv">{car.color}</div><div className="cd-fl">Color</div></div></div><div className="cd-fsep" /></>
+              <><div className="cd-fact"><span className="cd-fi"></span><div><div className="cd-fv">{car.color}</div><div className="cd-fl">Color</div></div></div><div className="cd-fsep" /></>
             )}
             {car.body && (
-              <div className="cd-fact"><span className="cd-fi">🚗</span><div><div className="cd-fv">{car.body}</div><div className="cd-fl">Body</div></div></div>
+              <div className="cd-fact"><span className="cd-fi"></span><div><div className="cd-fv">{car.body}</div><div className="cd-fl">Body</div></div></div>
             )}
           </div>
 
@@ -304,20 +304,20 @@ export default function CarDetails() {
           <div className="cd-scard">
             <div className="cd-stitle"><span className="cd-sline" />Specifications</div>
             <div className="cd-spec-table">
-              {car.body       && <div className="cd-sr"><span className="cd-sk">🚗 Body Shape</span><span className="cd-sv">{car.body}</span></div>}
-              {car.fuel       && <div className="cd-sr"><span className="cd-sk">⛽ Fuel Type</span><span className="cd-sv">{car.fuel}</span></div>}
-              {car.transmission && <div className="cd-sr"><span className="cd-sk">⚙️ Transmission</span><span className="cd-sv">{car.transmission}</span></div>}
-              {car.color      && <div className="cd-sr"><span className="cd-sk">🎨 Color</span><span className="cd-sv">{car.color}</span></div>}
-              {car.year       && <div className="cd-sr"><span className="cd-sk">📅 Year</span><span className="cd-sv">{car.year}</span></div>}
-              {car.manufacturer && <div className="cd-sr"><span className="cd-sk">🏭 Brand</span><span className="cd-sv">{car.manufacturer}</span></div>}
-              {car.model      && <div className="cd-sr"><span className="cd-sk">🏷️ Model</span><span className="cd-sv">{car.model}</span></div>}
-              {car.mileage    && <div className="cd-sr"><span className="cd-sk">🔄 Mileage</span><span className="cd-sv">{car.mileage}</span></div>}
-              {car.category   && <div className="cd-sr"><span className="cd-sk">📋 Condition</span><span className="cd-sv">{car.category}</span></div>}
-              {car.location   && <div className="cd-sr"><span className="cd-sk">📍 Location</span><span className="cd-sv">{car.location}</span></div>}
+              {car.body       && <div className="cd-sr"><span className="cd-sk">Body Shape</span><span className="cd-sv">{car.body}</span></div>}
+              {car.fuel       && <div className="cd-sr"><span className="cd-sk">Fuel Type</span><span className="cd-sv">{car.fuel}</span></div>}
+              {car.transmission && <div className="cd-sr"><span className="cd-sk">Transmission</span><span className="cd-sv">{car.transmission}</span></div>}
+              {car.color      && <div className="cd-sr"><span className="cd-sk">Color</span><span className="cd-sv">{car.color}</span></div>}
+              {car.year       && <div className="cd-sr"><span className="cd-sk">Year</span><span className="cd-sv">{car.year}</span></div>}
+              {car.manufacturer && <div className="cd-sr"><span className="cd-sk">Brand</span><span className="cd-sv">{car.manufacturer}</span></div>}
+              {car.model      && <div className="cd-sr"><span className="cd-sk">Model</span><span className="cd-sv">{car.model}</span></div>}
+              {car.mileage    && <div className="cd-sr"><span className="cd-sk">Mileage</span><span className="cd-sv">{car.mileage}</span></div>}
+              {car.category   && <div className="cd-sr"><span className="cd-sk">Condition</span><span className="cd-sv">{car.category}</span></div>}
+              {car.location   && <div className="cd-sr"><span className="cd-sk">Location</span><span className="cd-sv">{car.location}</span></div>}
               {car.payments && car.payments.length > 0 && (
-                <div className="cd-sr"><span className="cd-sk">💳 Payment</span><span className="cd-sv">{car.payments.join(", ")}</span></div>
+                <div className="cd-sr"><span className="cd-sk">Payment</span><span className="cd-sv">{car.payments.join(", ")}</span></div>
               )}
-              <div className="cd-sr"><span className="cd-sk">🤝 Negotiable</span><span className="cd-sv">{car.negotiable ? "Yes" : "No"}</span></div>
+              <div className="cd-sr"><span className="cd-sk">Negotiable</span><span className="cd-sv">{car.negotiable ? "Yes" : "No"}</span></div>
             </div>
           </div>
 
@@ -326,10 +326,10 @@ export default function CarDetails() {
             <div className="cd-stitle"><span className="cd-sline" />Listing Info</div>
             <div className="cd-cond-list">
               <div className="cd-lr"><span>Listing ID</span><strong>#{car.id.slice(-8).toUpperCase()}</strong></div>
-              <div className="cd-lr"><span>Location</span><strong>📍 {car.location || "—"}</strong></div>
+              <div className="cd-lr"><span>Location</span><strong>{car.location || "—"}</strong></div>
               <div className="cd-lr"><span>Condition</span><strong>{car.category || "—"}</strong></div>
               <div className="cd-lr"><span>Payment Options</span><strong>{car.payments?.join(", ") || "Cash"}</strong></div>
-              <div className="cd-lr"><span>Negotiable</span><strong>{car.negotiable ? "✅ Yes" : "❌ No"}</strong></div>
+              <div className="cd-lr"><span>Negotiable</span><strong>{car.negotiable ? "Yes" : "No"}</strong></div>
             </div>
           </div>
 
@@ -361,25 +361,24 @@ export default function CarDetails() {
               <div className="cd-pc-note">{paymentNote}</div>
             </div>
             <div className="cd-pc-rating">
-              <span className="cd-stars">★★★★★</span>
               <strong>Verified Listing</strong>
             </div>
             <hr className="cd-pcdiv" />
             {displayPhone && (
               <a href={`tel:${displayPhone}`} className="cd-btn-full">
-                📞 Call Seller
+                Call Seller
               </a>
             )}
             <button
               className={`cd-btn-ghost${car && isSaved(car.id) ? " saved" : ""}`}
               onClick={() => car && toggleSave(car)}
             >
-              {car && isSaved(car.id) ? "❤ Saved!" : "♡ Save to Wishlist"}
+              {car && isSaved(car.id) ? "Saved!" : "Save to Wishlist"}
             </button>
             <div className="cd-pc-share">
               <span>Share:</span>
-              <button onClick={copyLink}>{copied ? "✅ Copied!" : "🔗 Link"}</button>
-              <button onClick={shareWhatsApp}>📤 WhatsApp</button>
+              <button onClick={copyLink}>{copied ? "Copied!" : "Link"}</button>
+              <button onClick={shareWhatsApp}>WhatsApp</button>
             </div>
           </div>
 
@@ -402,14 +401,14 @@ export default function CarDetails() {
               </div>
             </div>
             {displayPhone && (
-              <p className="cd-sc-meta">📞 {displayPhone}</p>
+              <p className="cd-sc-meta">{displayPhone}</p>
             )}
-            <p className="cd-sc-meta">📍 {car.location || "Egypt"}</p>
+            <p className="cd-sc-meta">{car.location || "Egypt"}</p>
             <div className="cd-cta-stack">
               {displayPhone && (
-                <a href={`tel:${displayPhone}`} className="cd-btn-call">📞 Call Now</a>
+                <a href={`tel:${displayPhone}`} className="cd-btn-call">Call Now</a>
               )}
-              <button className="cd-btn-wa" onClick={shareWhatsApp}>💬 WhatsApp</button>
+              <button className="cd-btn-wa" onClick={shareWhatsApp}>WhatsApp</button>
             </div>
           </div>
 
@@ -420,7 +419,7 @@ export default function CarDetails() {
       {lightboxIdx !== null && (
         <div className="cd-lightbox" onClick={closeLightbox} role="dialog" aria-modal="true">
           {/* Close */}
-          <button className="cd-lb-close" onClick={closeLightbox} aria-label="Close">✕</button>
+          <button className="cd-lb-close" onClick={closeLightbox} aria-label="Close">X</button>
 
           {/* Counter */}
           <div className="cd-lb-counter">{lightboxIdx + 1} / {images.length}</div>

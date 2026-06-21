@@ -65,18 +65,20 @@ export default function DealerSignup() {
             </div>
           )}
 
-          <input type="text"     placeholder="Full Name"          className="auth-input" value={name}            onChange={(e) => setName(e.target.value)} />
-          <input type="email"    placeholder="Email Address"       className="auth-input" value={email}           onChange={(e) => setEmail(e.target.value)} />
-          <input type="password" placeholder="Password"            className="auth-input" value={password}        onChange={(e) => setPassword(e.target.value)} />
-          <input type="password" placeholder="Confirm Password"    className="auth-input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-          <input type="text"     placeholder="Location (City, Country)"   className="auth-input" value={location}       onChange={(e) => setLocation(e.target.value)} />
-          <input type="tel"      placeholder="Phone Number"        className="auth-input" value={phone}           onChange={(e) => setPhone(e.target.value)} />
-          <input type="tel"      placeholder="WhatsApp Number"     className="auth-input" value={whatsapp}        onChange={(e) => setWhatsapp(e.target.value)} />
-          <input type="text"     placeholder="Tax Number"          className="auth-input" value={taxNumber}       onChange={(e) => setTaxNumber(e.target.value)} />
+          <form onSubmit={(e) => { e.preventDefault(); handleSignup(); }}>
+            <input type="text"     placeholder="Full Name"          className="auth-input" value={name}            onChange={(e) => setName(e.target.value)} />
+            <input type="email"    placeholder="Email Address"       className="auth-input" value={email}           onChange={(e) => setEmail(e.target.value)} />
+            <input type="password" placeholder="Password"            className="auth-input" value={password}        onChange={(e) => setPassword(e.target.value)} />
+            <input type="password" placeholder="Confirm Password"    className="auth-input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            <input type="text"     placeholder="Location (City, Country)"   className="auth-input" value={location}       onChange={(e) => setLocation(e.target.value)} />
+            <input type="tel"      placeholder="Phone Number"        className="auth-input" value={phone}           onChange={(e) => setPhone(e.target.value)} />
+            <input type="tel"      placeholder="WhatsApp Number"     className="auth-input" value={whatsapp}        onChange={(e) => setWhatsapp(e.target.value)} />
+            <input type="text"     placeholder="Tax Number"          className="auth-input" value={taxNumber}       onChange={(e) => setTaxNumber(e.target.value)} />
 
-          <button className="auth-submit-btn" onClick={handleSignup} disabled={loading}>
-            {loading ? "Applying..." : "Apply as Dealer"}
-          </button>
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? "Applying..." : "Apply as Dealer"}
+            </button>
+          </form>
 
           <p className="auth-footer">Already have a dealer account? <Link href="/login">Log in</Link></p>
         </div>

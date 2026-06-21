@@ -115,27 +115,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
       <PageNavbar />
       <PageHeader title={title} description={description} />
       
-      {resolvedParams.brand?.toLowerCase() === "nissan" && (
-        <div className="brand-hero">
-          <div className="brand-top">
-            <div className="brand-img-box">
-              <img loading="lazy" src="/0122908588v1.jpeg" alt="Nissan HQ" />
-            </div>
-          </div>
-          <div className="brand-desc">
-            <h2>Nissan</h2>
-            <p>
-              Nissan Motor Corporation is a Japanese multinational automobile manufacturer headquartered in Yokohama, Japan.
-              Founded in 1933, the company has grown to become one of the world's leading carmakers, known for producing
-              reliable, innovative, and affordable vehicles. Nissan operates in more than 160 countries and is a key member of
-              the Renault–Nissan–Mitsubishi Alliance. The brand is famous for models such as the Nissan Altima, Patrol,
-              X-Trail, GT-R, and the electric Nissan Leaf, which is one of the best-selling EVs globally.
-            </p>
-          </div>
-        </div>
-      )}
 
-      {resolvedParams.brand && <hr className="section-divider" />}
 
       <div className="main-wrapper" id="mainWrapper" style={{ display: 'block' }}>
         <OffcanvasFilter />

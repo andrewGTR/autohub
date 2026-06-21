@@ -55,24 +55,26 @@ export default function Login() {
             </div>
           )}
 
-          <input
-            type="email"
-            placeholder="Enter your Email"
-            className="auth-input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Enter your Password"
-            className="auth-input"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+            <input
+              type="email"
+              placeholder="Enter your Email"
+              className="auth-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <input
+              type="password"
+              placeholder="Enter your Password"
+              className="auth-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-          <button className="auth-submit-btn" onClick={handleLogin} disabled={loading}>
-            {loading ? "Logging in..." : "Log in"}
-          </button>
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? "Logging in..." : "Log in"}
+            </button>
+          </form>
 
           <p className="auth-footer">Don&apos;t Have Account? <Link href="/signup">Sign up</Link></p>
           <p className="auth-footer">Are you a dealer? <Link href="/dealer-signup">Log in as a dealer</Link></p>

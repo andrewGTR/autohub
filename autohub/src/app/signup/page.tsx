@@ -49,14 +49,16 @@ export default function Signup() {
             </div>
           )}
 
-          <input type="text" placeholder="Full Name" className="auth-input" value={name} onChange={(e) => setName(e.target.value)} />
-          <input type="email" placeholder="Email Address" className="auth-input" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input type="password" placeholder="Password" className="auth-input" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <input type="password" placeholder="Confirm Password" className="auth-input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+          <form onSubmit={(e) => { e.preventDefault(); handleSignup(); }}>
+            <input type="text" placeholder="Full Name" className="auth-input" value={name} onChange={(e) => setName(e.target.value)} />
+            <input type="email" placeholder="Email Address" className="auth-input" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input type="password" placeholder="Password" className="auth-input" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input type="password" placeholder="Confirm Password" className="auth-input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
 
-          <button className="auth-submit-btn" onClick={handleSignup} disabled={loading}>
-            {loading ? "Creating account..." : "Sign up"}
-          </button>
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? "Creating account..." : "Sign up"}
+            </button>
+          </form>
 
           <p className="auth-footer">Already have an account? <Link href="/login">Log in</Link></p>
         </div>

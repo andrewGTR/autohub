@@ -39,7 +39,7 @@ export default function SavedCarsGrid() {
   if (savedCars.length === 0) {
     return (
       <div className="saved-empty">
-        <div className="saved-empty-icon">🚗</div>
+        <div className="saved-empty-icon"></div>
         <h3>No saved cars yet</h3>
         <p>Browse the marketplace and click "Save to Wishlist" on any listing.</p>
         <Link href="/marketplace" className="saved-browse-btn">Browse Cars</Link>
@@ -81,10 +81,10 @@ export default function SavedCarsGrid() {
             <div className="saved-card-body">
               <h3 className="saved-card-name">{car.name} <span>{car.year}</span></h3>
               <div className="saved-card-meta">
-                {car.mileage && <span>🔄 {car.mileage}</span>}
-                {car.transmission && <span>⚙️ {car.transmission}</span>}
-                {car.location && <span>📍 {car.location}</span>}
-                <span>👤 {car.dealerName || `${car.manufacturer} Dealer`}</span>
+                {car.mileage && <span>{car.mileage}</span>}
+                {car.transmission && <span>{car.transmission}</span>}
+                {car.location && <span>{car.location}</span>}
+                <span>{car.dealerName || `${car.manufacturer} Dealer`}</span>
               </div>
               <div className="saved-card-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.2' }}>
                 {car.isOffer && car.offerPrice ? (
@@ -104,7 +104,7 @@ export default function SavedCarsGrid() {
             aria-label="Remove from wishlist"
             title="Remove from wishlist"
           >
-            ✕
+            X
           </button>
         </div>
       ))}

@@ -97,29 +97,29 @@ const COMPARE_RE = /\b(compare|vs|versus|difference between|better)\b/i;
 const COMPARE_AR_RE = /(?:قارن|مقارنة|الفرق بين|ايهما|أيهما)/i;
 
 const SEVERITY_EMOJI: Record<string, string> = {
-  minor: '🟢', moderate: '🟡', severe: '🔴', critical: '⚫'
+  minor: '', moderate: '', severe: '', critical: ''
 };
 
 const LIKELIHOOD_EMOJI: Record<string, string> = {
-  likely: '🔴', possible: '🟡', unlikely: '🔵'
+  likely: '', possible: '', unlikely: ''
 };
 
 const CAR_INTENTS = [
-  { emoji: '🔍', label: 'Identify this car', prompt: 'Identify this car — what is the brand, model, year and generation?' },
-  { emoji: '📋', label: 'Full specs', prompt: 'Give me the full specs of this car — engine, power, dimensions and fuel type.' },
-  { emoji: '🛒', label: 'Is it worth buying?', prompt: 'Is this car worth buying? Give me reliability, value and what to check.' },
-  { emoji: '⚠️', label: 'Common problems', prompt: 'What are the common problems and known issues with this car?' },
-  { emoji: '💰', label: 'Price & market value', prompt: 'What is the current market value and price range for this car?' },
-  { emoji: '🔧', label: 'Maintenance tips', prompt: 'What are the maintenance tips, service intervals and running costs for this car?' },
+  { emoji: '', label: 'Identify this car', prompt: 'Identify this car — what is the brand, model, year and generation?' },
+  { emoji: '', label: 'Full specs', prompt: 'Give me the full specs of this car — engine, power, dimensions and fuel type.' },
+  { emoji: '', label: 'Is it worth buying?', prompt: 'Is this car worth buying? Give me reliability, value and what to check.' },
+  { emoji: '', label: 'Common problems', prompt: 'What are the common problems and known issues with this car?' },
+  { emoji: '', label: 'Price & market value', prompt: 'What is the current market value and price range for this car?' },
+  { emoji: '', label: 'Maintenance tips', prompt: 'What are the maintenance tips, service intervals and running costs for this car?' },
 ];
 
 const DAMAGE_INTENTS = [
-  { emoji: '📋', label: 'Full damage report', prompt: '__DAMAGE_FULL__', isDamage: true },
-  { emoji: '🚦', label: 'Is it safe to drive?', prompt: 'Focus only on whether this car is safe to drive.', isDamage: true, danger: true },
-  { emoji: '💸', label: 'Repair cost estimate', prompt: 'Focus on repair cost estimation for all visible damage.', isDamage: true },
-  { emoji: '🔧', label: 'Hidden & internal', prompt: 'Focus on hidden and internal damage that might not be visible.', isDamage: true },
-  { emoji: '🛒', label: 'Should I buy this?', prompt: 'Assess whether this car is worth buying given the damage.', isDamage: true },
-  { emoji: '⚡', label: 'Quick summary', prompt: 'Give a brief 2-3 sentence summary of the key damage only.', isDamage: true },
+  { emoji: '', label: 'Full damage report', prompt: '__DAMAGE_FULL__', isDamage: true },
+  { emoji: '', label: 'Is it safe to drive?', prompt: 'Focus only on whether this car is safe to drive.', isDamage: true, danger: true },
+  { emoji: '', label: 'Repair cost estimate', prompt: 'Focus on repair cost estimation for all visible damage.', isDamage: true },
+  { emoji: '', label: 'Hidden & internal', prompt: 'Focus on hidden and internal damage that might not be visible.', isDamage: true },
+  { emoji: '', label: 'Should I buy this?', prompt: 'Assess whether this car is worth buying given the damage.', isDamage: true },
+  { emoji: '', label: 'Quick summary', prompt: 'Give a brief 2-3 sentence summary of the key damage only.', isDamage: true },
 ];
 
 const DEFAULT_BUYER_PROFILE: BuyerProfile = {
@@ -443,11 +443,12 @@ export default function AiPage() {
       const blob = await res.blob();
       const form = new FormData();
       form.append('image', blob, 'damage.jpg');
-      if (description) form.append('description', description);
+      form.append('description', description || '');
       form.append('conversationId', activeSessionId || '');
 
-      const resp = await fetch(`${API_BASE}/damage`, { method: 'POST', headers: getAuthHeaders(), body: form });
+      const resp = await fetch(`/api/ai/damage`, { method: 'POST', headers: getAuthHeaders(), body: form });
       const result = await resp.json();
+      console.log('=== DAMAGE API RAW RESPONSE ===', JSON.stringify(result, null, 2));
       setIsTyping(false);
 
       if (!resp.ok || result.success === false) {
@@ -456,7 +457,7 @@ export default function AiPage() {
         return;
       }
 
-      const data: DamageReport = result.data || result;
+      const data: DamageReport = result.data?.report || result.data || result;
 
       // If there's a narrative message, show it first
       if (data.message) {
@@ -526,8 +527,8 @@ export default function AiPage() {
           id: `${ts}-picker-car`,
           role: "bot",
           type: "intent-picker",
-          intentActions: CAR_INTENTS.map(i => ({ label: `${i.emoji} ${i.label}`, prompt: i.prompt })),
-          content: "🚗 Car Analysis",
+          intentActions: CAR_INTENTS.map(i => ({ label: i.label, prompt: i.prompt })),
+          content: "Car Analysis",
           time: now()
         },
         {
@@ -535,12 +536,12 @@ export default function AiPage() {
           role: "bot",
           type: "intent-picker",
           intentActions: DAMAGE_INTENTS.map(i => ({
-            label: `${i.emoji} ${i.label}`,
+            label: i.label,
             prompt: i.prompt,
             isDamage: true,
             danger: i.danger,
           })),
-          content: "🔧 Damage Assessment",
+          content: "Damage Assessment",
           time: now()
         }
       ]);
@@ -756,7 +757,7 @@ export default function AiPage() {
         form.append('image', blob, 'car.jpg');
         form.append('conversationId', activeSessionId || '');
 
-        const resp = await fetch(`${API_BASE}/analyze-image`, { method: 'POST', headers: getAuthHeaders(), body: form });
+        const resp = await fetch(`/api/ai/analyze-image`, { method: 'POST', headers: getAuthHeaders(), body: form });
         const result = await resp.json();
         setIsTyping(false);
 
@@ -797,7 +798,7 @@ export default function AiPage() {
         form.append('message', text);
         form.append('conversationId', activeSessionId || '');
 
-        const resp = await fetch(`${API_BASE}/chat-with-image`, { method: 'POST', headers: getAuthHeaders(), body: form });
+        const resp = await fetch(`/api/ai/chat-with-image`, { method: 'POST', headers: getAuthHeaders(), body: form });
         const result = await resp.json();
         setIsTyping(false);
 
@@ -1240,7 +1241,7 @@ export default function AiPage() {
                             href={`/search?q=${encodeURIComponent(`${msg.resultData.brand || ''} ${msg.resultData.model || ''}`.trim())}`}
                             className="autohub-find-btn"
                           >
-                            🔍 Find on AutoHub
+                            Find on AutoHub
                           </a>
                         )}
                       </div>
@@ -1256,13 +1257,13 @@ export default function AiPage() {
                       <div className="damage-card">
                         {/* Severity banner */}
                         <div className={`damage-severity-banner ${msg.damageData.overall_severity}`}>
-                          {SEVERITY_EMOJI[msg.damageData.overall_severity] || '⚪'} {msg.damageData.overall_severity?.toUpperCase()} DAMAGE
+                          {msg.damageData.overall_severity?.toUpperCase()} DAMAGE
                         </div>
 
                         {/* Do not drive warning */}
                         {!msg.damageData.safe_to_drive && (
-                          <div className="damage-do-not-drive">
-                            ⛔ DO NOT DRIVE — Safety risk detected
+                          <div className="damage-badge damage-danger">
+                            DO NOT DRIVE — Safety risk detected
                           </div>
                         )}
 
@@ -1289,13 +1290,13 @@ export default function AiPage() {
                           {/* Internal risks */}
                           {msg.damageData.internal_risks?.length > 0 && (
                             <>
-                              <div className="damage-section-title">🔧 Suspected Internal Damage</div>
+                              <div className="damage-section-title">Suspected Internal Damage</div>
                               {msg.damageData.internal_risks.map((risk, i) => (
                                 <div key={i} className="damage-internal-item">
                                   <div className="damage-area-info">
                                     <div className="damage-area-name">
                                       <span className={`damage-likelihood-badge ${risk.likelihood}`}>
-                                        {LIKELIHOOD_EMOJI[risk.likelihood] || ''} {risk.likelihood}
+                                        {risk.likelihood}
                                       </span>
                                       {risk.component}
                                     </div>
@@ -1334,7 +1335,7 @@ export default function AiPage() {
 
                           {/* Disclaimer */}
                           <div className="damage-disclaimer">
-                            ⚠️ Internal damage estimates are based on mechanical inference — always get a professional workshop inspection.
+                            Internal damage estimates are based on mechanical inference — always get a professional workshop inspection.
                           </div>
                         </div>
                       </div>
