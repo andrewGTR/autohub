@@ -44,7 +44,7 @@ export default function LearnPage() {
             <h1 style={{
               fontSize: "clamp(2rem, 5vw, 3.2rem)",
               fontWeight: "900",
-              color: "var(--background)",
+              color: "#fff",
               marginBottom: "16px",
               lineHeight: "1.15",
               letterSpacing: "-0.02em",
@@ -77,7 +77,7 @@ export default function LearnPage() {
                   textAlign: "center",
                   minWidth: "100px",
                 }}>
-                  <div style={{ fontWeight: "900", fontSize: "1.4rem", color: "var(--background)" }}>{stat.label}</div>
+                  <div style={{ fontWeight: "900", fontSize: "1.4rem", color: "#fff" }}>{stat.label}</div>
                   <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.55)", textTransform: "uppercase", marginTop: "2px" }}>{stat.sub}</div>
                 </div>
               ))}
