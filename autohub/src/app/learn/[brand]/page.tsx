@@ -4,10 +4,10 @@ import BrandExplorer from "../../../components/BrandExplorer";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import SmoothImage from "../../../components/SmoothImage";
-import { CarBrand } from "../../../types/car";
+import { CarBrand, CarModel } from "../../../types/car";
 import { getTotalGenerations } from "../../../utils/carUtils";
 import styles from "./page.module.css";
-
+import { API_BASE_URL } from "../../../lib/config";
 import { getBrandCoverUrl } from "../../../services/imageService";
 
 interface PageProps {
@@ -69,6 +69,39 @@ export default async function BrandLearnPage({ params }: PageProps) {
   const iconPath = BRAND_ICONS[decodedBrand] || "";
   const coverImg = getBrandCoverUrl(decodedBrand) || "";
 
+  // ── Fetch custom vehicles from API ──
+  let customModels: CarModel[] = [];
+  try {
+    const res = await fetch(`${API_BASE_URL}/vehicles`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      const allVehicles: any[] = data.data?.vehicles || data.data || [];
+      const brandVehicles = allVehicles.filter((v: any) => v.brand?.toLowerCase() === decodedBrand.toLowerCase());
+      
+      customModels = brandVehicles.map((v: any) => ({
+        n: v.model || v.name || "Custom Model",
+        g: [{
+          n: "Generation 1",
+          u: "",
+          i: "",
+          y: new Date().getFullYear().toString(),
+          hp: v.engineSize ? `Power from ${v.engineSize}` : "",
+          fl: v.fuelType ? `Fuel consumption from ${v.fuelType}` : "",
+          pr: "",
+          desc: v.description || "",
+          mods: [],
+          opts: [],
+          prices: [],
+          photos: (v.image || v.imageUrl) ? [v.image || v.imageUrl] : []
+        }]
+      }));
+    }
+  } catch (e) {
+    console.error("Failed to fetch custom vehicles:", e);
+  }
+
+  const allModels = [...customModels, ...brandData.m];
+
   return (
     <main>
       <PageNavbar />
@@ -112,8 +145,8 @@ export default async function BrandLearnPage({ params }: PageProps) {
             {/* Stats pills */}
             <div className={styles.statsRow}>
               {[
-                { val: totalModels, label: "Models" },
-                { val: totalGens,   label: "Generations" },
+                { val: allModels.length, label: "Models" },
+                { val: totalGens + customModels.length,   label: "Generations" },
               ].map((s) => (
                 <div key={s.label} className={styles.statPill}>
                   <div className={styles.statVal}>{s.val}</div>
@@ -125,7 +158,7 @@ export default async function BrandLearnPage({ params }: PageProps) {
         </div>
 
         {/* ── Model Grid ── */}
-        <BrandExplorer brandName={decodedBrand} models={brandData.m} />
+        <BrandExplorer brandName={decodedBrand} models={allModels} />
 
       </div>
     </main>

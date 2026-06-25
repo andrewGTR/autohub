@@ -49,7 +49,7 @@ export default function Signup() {
             </div>
           )}
 
-          <form onSubmit={(e) => { e.preventDefault(); handleSignup(); }}>
+          <form className="auth-form" onSubmit={(e) => { e.preventDefault(); handleSignup(); }}>
             <input type="text" placeholder="Full Name" className="auth-input" value={name} onChange={(e) => setName(e.target.value)} />
             <input type="email" placeholder="Email Address" className="auth-input" value={email} onChange={(e) => setEmail(e.target.value)} />
             <input type="password" placeholder="Password" className="auth-input" value={password} onChange={(e) => setPassword(e.target.value)} />

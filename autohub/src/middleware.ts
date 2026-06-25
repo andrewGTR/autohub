@@ -18,6 +18,9 @@ export function middleware(request: NextRequest) {
     path.startsWith('/dealer-profile') ||
     path.startsWith('/sell-car');
 
+  /** Admin-only pages */
+  const isAdminRoute = path.startsWith('/admin');
+
   /** Auth-only pages — redirect away if already logged in */
   const isAuthRoute =
     path === '/login' ||
@@ -28,7 +31,7 @@ export function middleware(request: NextRequest) {
 
   // Logged-in users don't need to see login/signup
   if (isAuthRoute && token) {
-    const dest = role === 'dealer' ? '/dealer-profile' : '/';
+    const dest = role === 'admin' ? '/admin' : role === 'dealer' ? '/dealer-profile' : '/';
     return NextResponse.redirect(new URL(dest, request.url));
   }
 
@@ -39,6 +42,12 @@ export function middleware(request: NextRequest) {
 
   // Only dealers may access dealer-specific pages
   if (isDealerRoute && role !== 'dealer') {
+    const dest = token ? '/' : '/login';
+    return NextResponse.redirect(new URL(dest, request.url));
+  }
+
+  // Only admins may access admin pages
+  if (isAdminRoute && role !== 'admin') {
     const dest = token ? '/' : '/login';
     return NextResponse.redirect(new URL(dest, request.url));
   }

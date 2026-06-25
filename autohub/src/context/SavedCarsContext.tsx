@@ -105,22 +105,50 @@ export const SavedCarsProvider = ({ children }: { children: React.ReactNode }) =
       return;
     }
 
-    const ids = readIds(key);
-    setSavedIds(ids);
+    // Load from localStorage first for instant visual feedback
+    const localIds = readIds(key);
+    setSavedIds(localIds);
 
-    if (ids.length === 0) {
-      setLoadingSaved(false);
-      return;
-    }
-
-    // Hydrate full Listing objects for IDs we have stored
     setLoadingSaved(true);
-    Promise.allSettled(ids.map((id) => getListingById(id))).then((results) => {
-      const cars = results
-        .filter((r): r is PromiseFulfilledResult<Listing> => r.status === "fulfilled")
-        .map((r) => r.value);
-      setSavedCars(cars);
-      setLoadingSaved(false);
+
+    // Fetch the authoritative saved posts from the backend saved-posts endpoint
+    import("../lib/api").then(({ getSavedPosts, getListingById }) => {
+      getSavedPosts()
+        .then((cars) => {
+          const backendIds = cars.map((c) => c.id);
+
+          // Union of local and backend saved posts to ensure no loss of data
+          const combinedIds = Array.from(new Set([...localIds, ...backendIds]));
+          setSavedIds(combinedIds);
+
+          const localOnlyIds = localIds.filter((id) => !backendIds.includes(id));
+          if (localOnlyIds.length === 0) {
+            setSavedCars(cars);
+            return;
+          }
+
+          // Hydrate only local-only IDs and append them
+          return Promise.allSettled(localOnlyIds.map((id) => getListingById(id))).then((results) => {
+            const extraCars = results
+              .filter((r): r is PromiseFulfilledResult<Listing> => r.status === "fulfilled")
+              .map((r) => r.value);
+            setSavedCars([...cars, ...extraCars]);
+          });
+        })
+        .catch((err) => {
+          console.warn("Failed to load saved posts from backend saved-posts, using local only:", err);
+          if (localIds.length > 0) {
+            return Promise.allSettled(localIds.map((id) => getListingById(id))).then((results) => {
+              const cars = results
+                .filter((r): r is PromiseFulfilledResult<Listing> => r.status === "fulfilled")
+                .map((r) => r.value);
+              setSavedCars(cars);
+            });
+          }
+        })
+        .finally(() => {
+          setLoadingSaved(false);
+        });
     });
   }, [userId]);
 
@@ -140,6 +168,12 @@ export const SavedCarsProvider = ({ children }: { children: React.ReactNode }) =
 
   const toggleSave = useCallback(
     (listing: Listing) => {
+      if (!user) {
+        alert("You must login to save a post.");
+        return;
+      }
+
+      // Optimistically toggle state locally
       setSavedIds((prev) => {
         const alreadySaved = prev.includes(listing.id);
         if (alreadySaved) {
@@ -155,11 +189,25 @@ export const SavedCarsProvider = ({ children }: { children: React.ReactNode }) =
           return [...prev, listing.id];
         }
       });
+
+      // Notify backend of the toggle
+      import("../lib/api").then(({ toggleSavePost }) => {
+        toggleSavePost(listing.id).catch((err) => {
+          console.error("Backend toggle save failed:", err);
+        });
+      });
     },
-    []
+    [user]
   );
 
   const removeSaved = useCallback((id: string) => {
+    // Notify backend of the toggle (remove/unsave)
+    import("../lib/api").then(({ toggleSavePost }) => {
+      toggleSavePost(id).catch((err) => {
+        console.error("Backend remove save failed:", err);
+      });
+    });
+
     setSavedIds((prev) => prev.filter((x) => x !== id));
     setSavedCars((prev) => prev.filter((c) => c.id !== id));
   }, []);

@@ -1103,8 +1103,18 @@ footer p{
   .cd-content-grid { padding: 12px 14px 30px; }
   .cd-thumb-strip  { padding: 10px 14px; }
   .cd-tthumb { width: 70px; height: 48px; }
-  .cd-facts-bar { flex-direction: row; flex-wrap: wrap; }
-  .cd-fact { min-width: 80px; padding: 6px 10px; }
+  .cd-facts-bar { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 12px; 
+    padding: 16px;
+  }
+  .cd-fact { 
+    min-width: unset; 
+    padding: 8px; 
+    background: #f8f9fc; 
+    border-radius: 8px; 
+  }
   .cd-fsep { display: none; }
 }
 
@@ -1674,6 +1684,12 @@ footer p{
   flex-direction: column;
   gap: 14px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 /* ===== GOOGLE BUTTON ===== */
@@ -3470,8 +3486,18 @@ footer p{
   .cd-content-grid { padding: 12px 14px 30px; }
   .cd-thumb-strip  { padding: 10px 14px; }
   .cd-tthumb { width: 70px; height: 48px; }
-  .cd-facts-bar { flex-direction: row; flex-wrap: wrap; }
-  .cd-fact { min-width: 80px; padding: 6px 10px; }
+  .cd-facts-bar { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 12px; 
+    padding: 16px;
+  }
+  .cd-fact { 
+    min-width: unset; 
+    padding: 8px; 
+    background: #f8f9fc; 
+    border-radius: 8px; 
+  }
   .cd-fsep { display: none; }
 }
 
@@ -5030,6 +5056,196 @@ body {
 .conf-high { background: #4CAF50; }
 .conf-medium { background: #FF9800; }
 .conf-low { background: #f44336; }
+
+/* ======== RESULT CARD V2 (AI Identification) ======== */
+.result-card-v2 {
+  background: #ffffff;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rc-badge-row {
+  margin-bottom: 8px;
+}
+
+.rc-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 99px;
+  letter-spacing: 0.03em;
+  text-transform: capitalize;
+}
+
+.rc-badge-identified {
+  background: #E8F5E9;
+  color: #2E7D32;
+  border: 1px solid #C8E6C9;
+}
+
+.rc-badge-web {
+  background: #FFF3E0;
+  color: #E65100;
+  border: 1px solid #FFE0B2;
+}
+
+.rc-badge-uncertain {
+  background: #EDE7F6;
+  color: #4527A0;
+  border: 1px solid #D1C4E9;
+}
+
+.rc-car-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.01em;
+}
+
+.rc-confidence-track {
+  height: 6px;
+  border-radius: 4px;
+  background: #e8e8e8;
+  margin: 8px 0 4px;
+  overflow: hidden;
+}
+
+.rc-confidence-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rc-conf-high {
+  background: linear-gradient(90deg, #4CAF50, #2196F3);
+}
+
+.rc-conf-med {
+  background: linear-gradient(90deg, #FF9800, #FFC107);
+}
+
+.rc-conf-low {
+  background: linear-gradient(90deg, #f44336, #FF5722);
+}
+
+.rc-confidence-label {
+  font-size: 11.5px;
+  color: #888;
+  margin: 2px 0 12px 0;
+}
+
+.rc-specs {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 8px;
+  margin-bottom: 4px;
+}
+
+.rc-spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  font-size: 13px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.rc-spec-row:last-child {
+  border-bottom: none;
+}
+
+.rc-spec-key {
+  color: #888;
+}
+
+.rc-spec-val {
+  color: #1a1a1a;
+  font-weight: 500;
+  text-align: right;
+}
+
+.rc-pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.rc-pc {
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rc-pc.pros {
+  background: #E8F5E9;
+  border: 1px solid #C8E6C9;
+}
+
+.rc-pc.cons {
+  background: #FFEBEE;
+  border: 1px solid #FFCDD2;
+}
+
+.rc-pc-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rc-pc-label.pros-label {
+  color: #2E7D32;
+}
+
+.rc-pc-label.cons-label {
+  color: #C62828;
+}
+
+.rc-pc-text {
+  color: #555;
+  font-size: 12.5px;
+}
+
+.rc-find-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: #3a3aff;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: 14px;
+  transition: background 0.2s, transform 0.15s;
+  align-self: flex-start;
+}
+
+.rc-find-btn:hover {
+  background: #2b2bff;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+  .rc-pros-cons {
+    grid-template-columns: 1fr;
+  }
+  .rc-car-name {
+    font-size: 17px;
+  }
+  .result-card-v2 {
+    padding: 16px;
+  }
+}
 
 /* ======== SIDEBAR STYLES ======== */
 .ai-sidebar {

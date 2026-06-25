@@ -21,7 +21,7 @@ function PageNavbarContent() {
   const category = searchParams ? searchParams.get("category") : null;
   
   const profileHref = mounted 
-    ? (isLoggedIn ? (userRole === "dealer" ? "/dealer-profile" : "/user-profile") : "/login")
+    ? (isLoggedIn ? (userRole === "admin" ? "/admin" : userRole === "dealer" ? "/dealer-profile" : "/user-profile") : "/login")
     : "/login";
     
   const handleSearch = (e: React.FormEvent) => {

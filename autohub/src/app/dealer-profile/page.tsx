@@ -3,11 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import PageNavbar from "../../components/PageNavbar";
 import { useAuth } from "../../context/AuthContext";
-import { getProfile, updateProfile, getListings } from "../../lib/api";
+import { getDealerProfile, updateDealerProfile, changeDealerPassword, getListings } from "../../lib/api";
 import { useSavedCars } from "../../context/SavedCarsContext";
 import { usePosts } from "../../context/PostsContext";
 import SavedCarsGrid from "../../components/SavedCarsGrid";
-import type { ProfileData } from "../../lib/api";
+import type { DealerProfileData } from "../../lib/api";
 import type { Listing } from "../../context/PostsContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -64,19 +64,22 @@ export default function DealerProfile() {
   
   const [myListings, setMyListings] = useState<Listing[]>([]);
 
-  const defaultProfile: ProfileData = {
-    name: user?.name ?? "User",
+  const defaultProfile: DealerProfileData = {
+    dealershipName: user?.name ?? "Dealership",
     location: "",
-    phone: "",
-    whatsapp: "",
-    taxNumber: "",
-    email: user?.email ?? "",
+    contactPhone: "",
+    bio: "",
+    website: "",
   };
 
-  const [formData, setFormData] = useState<ProfileData>(defaultProfile);
-  const [originalData, setOriginalData] = useState<ProfileData>(defaultProfile);
+  const [formData, setFormData] = useState<DealerProfileData>(defaultProfile);
+  const [originalData, setOriginalData] = useState<DealerProfileData>(defaultProfile);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Password change state
+  const [pwdForm, setPwdForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+  const [pwdSaving, setPwdSaving] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn || userRole !== "dealer") {
@@ -85,22 +88,22 @@ export default function DealerProfile() {
     }
     
     Promise.all([
-      getProfile(),
+      getDealerProfile(),
       getListings().catch(() => [])
     ]).then(([profileData, listingsData]) => {
-        const merged: ProfileData = {
-          name: profileData.name || user?.name || "",
-          email: profileData.email || user?.email || "",
+        const merged: DealerProfileData = {
+          dealershipName: profileData.dealershipName || user?.name || "",
+          contactPhone: profileData.contactPhone,
           location: profileData.location,
-          phone: profileData.phone,
-          whatsapp: profileData.whatsapp,
-          taxNumber: profileData.taxNumber,
-          avatar: profileData.avatar,
+          bio: profileData.bio,
+          website: profileData.website,
+          logo: profileData.logo,
+          coverImage: profileData.coverImage,
         };
         setFormData(merged);
         setOriginalData(merged);
         
-        if (profileData.avatar) setAvatarSrc(profileData.avatar);
+        if (profileData.logo) setAvatarSrc(profileData.logo);
         
         if (user?.id) {
           const myCars = listingsData.filter(car => car.dealerId === user.id);
@@ -113,17 +116,18 @@ export default function DealerProfile() {
   }, [isLoggedIn, userRole]);
 
   const handleSave = async () => {
-    if (!formData.name || !formData.phone) {
-      alert("Name and Phone cannot be empty");
+    if (!formData.dealershipName || !formData.contactPhone) {
+      alert("Dealership Name and Contact Phone cannot be empty");
       return;
     }
     setSaving(true);
     try {
-      const updated = await updateProfile(formData, avatarFile || undefined);
+      // Pass formData.logo (Base64 string) instead of avatarFile to satisfy the backend string validation
+      const updated = await updateDealerProfile(formData, avatarFile ? formData.logo : undefined);
       setOriginalData(updated);
 
       if (user) {
-        const updatedUser = { ...user, name: updated.name, email: updated.email };
+        const updatedUser = { ...user, name: updated.dealershipName };
         setAuth(updatedUser);
         localStorage.setItem("autohub_user", JSON.stringify(updatedUser));
       }
@@ -135,6 +139,24 @@ export default function DealerProfile() {
       alert(e.message || "Failed to save profile");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+      alert("New passwords do not match!");
+      return;
+    }
+    setPwdSaving(true);
+    try {
+      await changeDealerPassword(pwdForm.oldPassword, pwdForm.newPassword);
+      alert("Password changed successfully!");
+      setPwdForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (e: any) {
+      alert(e.message || "Failed to change password");
+    } finally {
+      setPwdSaving(false);
     }
   };
 
@@ -156,7 +178,7 @@ export default function DealerProfile() {
         if (event.target?.result) {
           const base64 = event.target.result as string;
           setAvatarSrc(base64);
-          setFormData(prev => ({ ...prev, avatar: base64 }));
+          setFormData(prev => ({ ...prev, logo: base64 }));
         }
       };
       reader.readAsDataURL(file);
@@ -256,11 +278,11 @@ export default function DealerProfile() {
           <div className="dd-header-card">
             <div className="dd-header-left">
               <div className="dd-logo-wrap" onClick={() => fileInputRef.current?.click()} style={{ cursor: 'pointer' }} title="Change Avatar">
-                {avatarSrc ? <img loading="lazy" src={avatarSrc} alt="Dealer Logo" /> : (originalData.name.charAt(0).toUpperCase() || "D")}
+                {avatarSrc ? <img loading="lazy" src={avatarSrc} alt="Dealer Logo" /> : (originalData.dealershipName.charAt(0).toUpperCase() || "D")}
                 <input type="file" ref={fileInputRef} accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
               </div>
               <div className="dd-dealer-info">
-                <h2>{originalData.name} <IconVerify /></h2>
+                <h2>{originalData.dealershipName} <IconVerify /></h2>
                 <div className="dd-dealer-meta">
                   <span>{myListings.length} Active Listings</span>
                   <span>Joined 2020</span>
@@ -425,18 +447,29 @@ export default function DealerProfile() {
 
       {activeTab === "settings" && (
         <div className="dd-layout" style={{ marginTop: '24px' }}>
-          <div className="dd-section" style={{ maxWidth: '600px' }}>
+          <div className="dd-section" style={{ maxWidth: '100%' }}>
             <div className="dd-section-header">
-               <div className="dd-section-title">Personal Information</div>
+               <div className="dd-section-title">Dealership Information</div>
             </div>
             <div className="settings-wrap">
-              <div className="sg-field"><label>Full Name</label><input type="text" name="name" value={formData.name} onChange={handleChange} /></div>
-              <div className="sg-field"><label>Email Address</label><input type="email" name="email" value={formData.email} onChange={handleChange} /></div>
-              <div className="sg-field"><label>Phone Number</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} /></div>
+              <div className="sg-field"><label>Dealership Name</label><input type="text" name="dealershipName" value={formData.dealershipName} onChange={handleChange} /></div>
+              <div className="sg-field"><label>Contact Phone</label><input type="tel" name="contactPhone" value={formData.contactPhone} onChange={handleChange} /></div>
               <div className="sg-field"><label>City / Area</label><input type="text" name="location" value={formData.location} onChange={handleChange} /></div>
+              <div className="sg-field"><label>Website</label><input type="url" name="website" value={formData.website} onChange={handleChange} /></div>
+              <div className="sg-field"><label>Bio</label><textarea name="bio" value={formData.bio} onChange={(e) => setFormData({...formData, bio: e.target.value})} rows={3} /></div>
               <button className="btn-edit" style={{ background: "var(--subnav-bg)", color: "var(--background)", marginTop: '10px' }} onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</button>
             </div>
             
+            <div className="dd-section-header" style={{ marginTop: '30px' }}>
+               <div className="dd-section-title">Change Password</div>
+            </div>
+            <form className="settings-wrap" onSubmit={handlePasswordChange}>
+              <div className="sg-field"><label>Current Password</label><input type="password" value={pwdForm.oldPassword} onChange={(e) => setPwdForm({...pwdForm, oldPassword: e.target.value})} required /></div>
+              <div className="sg-field"><label>New Password</label><input type="password" value={pwdForm.newPassword} onChange={(e) => setPwdForm({...pwdForm, newPassword: e.target.value})} required /></div>
+              <div className="sg-field"><label>Confirm New Password</label><input type="password" value={pwdForm.confirmPassword} onChange={(e) => setPwdForm({...pwdForm, confirmPassword: e.target.value})} required /></div>
+              <button type="submit" className="btn-edit" style={{ background: "var(--subnav-bg)", color: "var(--background)", marginTop: '10px' }} disabled={pwdSaving}>{pwdSaving ? "Updating..." : "Update Password"}</button>
+            </form>
+
             <div className="dd-section-header" style={{ marginTop: '30px' }}>
                <div className="dd-section-title" style={{ color: '#c00' }}>Danger Zone</div>
             </div>
@@ -461,10 +494,11 @@ export default function DealerProfile() {
             </button>
           </div>
           <div className="modal-body">
-            <div className="mf"><label>Full Name</label><input type="text" name="name" value={formData.name} onChange={handleChange}/></div>
-            <div className="mf"><label>Email</label><input type="email" name="email" value={formData.email} onChange={handleChange}/></div>
-            <div className="mf"><label>Phone</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange}/></div>
+            <div className="mf"><label>Dealership Name</label><input type="text" name="dealershipName" value={formData.dealershipName} onChange={handleChange}/></div>
+            <div className="mf"><label>Contact Phone</label><input type="tel" name="contactPhone" value={formData.contactPhone} onChange={handleChange}/></div>
             <div className="mf"><label>City / Area</label><input type="text" name="location" value={formData.location} onChange={handleChange}/></div>
+            <div className="mf"><label>Website</label><input type="url" name="website" value={formData.website} onChange={handleChange}/></div>
+            <div className="mf"><label>Bio</label><textarea name="bio" value={formData.bio} onChange={(e) => setFormData({...formData, bio: e.target.value})} rows={3} /></div>
           </div>
           <div className="modal-footer">
             <button className="btn-cancel" onClick={handleCancelModal}>Cancel</button>

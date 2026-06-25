@@ -22,8 +22,9 @@ export default function Login() {
       // Calls api.loginUser() → currently mock, replace with real endpoint in api.ts
       const user = await loginUser({ email, password });
       setAuth(user);
-      // Dealers go to their profile dashboard; regular users go to their profile
-      router.push(user.role === "dealer" ? "/dealer-profile" : "/user-profile");
+      // Admins go to admin dashboard; Dealers go to their profile; regular users go to their profile
+      const dest = user.role === "admin" ? "/admin" : user.role === "dealer" ? "/dealer-profile" : "/user-profile";
+      router.push(dest);
 
     } catch (e: any) {
       setError(e.message || "Login failed. Please try again.");
@@ -37,7 +38,7 @@ export default function Login() {
       <PageNavbar />
       <div className="auth-wrapper" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="auth-card">
-          <button className="google-btn" onClick={handleLogin} disabled={loading}>
+          <button className="google-btn" type="button" onClick={() => window.location.href = '/api/auth/google'} disabled={loading}>
             <svg width="20" height="20" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.14 0 5.95 1.08 8.17 2.86l6.1-6.1C34.46 3.1 29.5 1 24 1 14.82 1 7.07 6.48 3.52 14.23l7.12 5.53C12.3 13.36 17.68 9.5 24 9.5z" />
               <path fill="#4285F4" d="M46.52 24.5c0-1.64-.15-3.22-.42-4.75H24v9h12.7c-.55 2.96-2.2 5.47-4.68 7.15l7.18 5.58C43.44 37.3 46.52 31.36 46.52 24.5z" />
@@ -55,7 +56,7 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+          <form className="auth-form" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
             <input
               type="email"
               placeholder="Enter your Email"
@@ -77,7 +78,7 @@ export default function Login() {
           </form>
 
           <p className="auth-footer">Don&apos;t Have Account? <Link href="/signup">Sign up</Link></p>
-          <p className="auth-footer">Are you a dealer? <Link href="/dealer-signup">Log in as a dealer</Link></p>
+          <p className="auth-footer">Are you a dealer? <Link href="/dealer-signup">Sign up as a dealer</Link></p>
         </div>
       </div>
     </>

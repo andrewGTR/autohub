@@ -83,7 +83,7 @@ interface ChatSession {
 // CONSTANTS
 // ══════════════════════════════════════════
 
-const API_BASE = "https://graduation-project-autohub-production.up.railway.app/api/ai";
+const API_BASE = "/api/ai";
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
 const detectLang = (text: string): 'ar' | 'en' => ARABIC_RE.test(text) ? 'ar' : 'en';
@@ -426,6 +426,10 @@ export default function AiPage() {
       handleDamageAnalysis(b64, mime, '');
     } else if (isDamage) {
       handleDamageAnalysis(b64, mime, prompt);
+    } else if (prompt.startsWith('Identify this car')) {
+      // Use the analyze-image endpoint (image-only path) which returns
+      // structured data (brand, model, confidence, etc.) for the result card
+      triggerSend('', b64, mime);
     } else {
       triggerSend(prompt, b64, mime);
     }
@@ -759,6 +763,7 @@ export default function AiPage() {
 
         const resp = await fetch(`/api/ai/analyze-image`, { method: 'POST', headers: getAuthHeaders(), body: form });
         const result = await resp.json();
+        console.log('=== ANALYZE-IMAGE API RAW RESPONSE ===', JSON.stringify(result, null, 2));
         setIsTyping(false);
 
         if (!resp.ok || result.success === false) {
@@ -1195,52 +1200,65 @@ export default function AiPage() {
                 {/* RESULT CARD */}
                 {msg.type === "result-card" && msg.resultData && (
                   <>
-                    <div className="ai-bubble">
-                      <div className="result-card">
-                        {msg.resultStatus === 'unknown' ? <span className="badge badge-web">Web match</span> : 
-                         msg.resultStatus === 'uncertain' ? <span className="badge badge-uncertain">Possible match</span> : 
-                         <span className="badge badge-found">Database match</span>}
-                        
-                        <h3>{msg.resultData.brand || '?'} {msg.resultData.model || '?'}</h3>
-                        
-                        <div className="confidence-bar">
-                          <div className={`confidence-fill ${msg.resultScore && msg.resultScore >= 0.88 ? 'conf-high' : msg.resultScore && msg.resultScore >= 0.75 ? 'conf-medium' : 'conf-low'}`} style={{ width: `${Math.round((msg.resultScore || 0) * 100)}%` }}></div>
-                        </div>
-                        <p style={{ fontSize: "11px", color: "#aaa", margin: "4px 0 8px 0" }}>Confidence: {Math.round((msg.resultScore || 0) * 100)}%</p>
-
-                        {msg.resultData.generation && msg.resultData.generation !== '---' && (
-                          <div className="spec-row"><span className="spec-label">Generation</span><span className="spec-val">{msg.resultData.generation}</span></div>
-                        )}
-                        {msg.resultData.year && msg.resultData.year !== '---' && (
-                          <div className="spec-row"><span className="spec-label">Year range</span><span className="spec-val">{msg.resultData.year}</span></div>
-                        )}
-                        {msg.resultData.engine && msg.resultData.engine !== '---' && (
-                          <div className="spec-row"><span className="spec-label">Engine / Power</span><span className="spec-val">{msg.resultData.engine}</span></div>
-                        )}
-                        {msg.resultData.body && msg.resultData.body !== '---' && (
-                          <div className="spec-row"><span className="spec-label">Body / Fuel</span><span className="spec-val">{msg.resultData.body}</span></div>
-                        )}
-                        {msg.resultData.color && (
-                          <div className="spec-row"><span className="spec-label">Color</span><span className="spec-val">{msg.resultData.color}</span></div>
-                        )}
-
-                        <div className="pros-cons">
-                          <div className="pc-box pros">
-                            <strong>Pros</strong>
-                            {msg.resultData.pros && msg.resultData.pros !== '---' && msg.resultData.pros !== 'Not_Available' ? msg.resultData.pros : 'Not available in database yet'}
-                          </div>
-                          <div className="pc-box cons">
-                            <strong>Cons</strong>
-                            {msg.resultData.cons && msg.resultData.cons !== '---' && msg.resultData.cons !== 'Not_Available' ? msg.resultData.cons : 'Not available in database yet'}
-                          </div>
+                    <div className="ai-bubble" style={{ padding: 0, overflow: 'hidden', borderRadius: '16px' }}>
+                      <div className="result-card-v2">
+                        {/* Status badge */}
+                        <div className="rc-badge-row">
+                          {msg.resultStatus === 'unknown' ? <span className="rc-badge rc-badge-web">Web Match</span> : 
+                           msg.resultStatus === 'uncertain' ? <span className="rc-badge rc-badge-uncertain">Possible Match</span> : 
+                           <span className="rc-badge rc-badge-identified">Identified</span>}
                         </div>
 
-                        {/* Find on AutoHub button */}
+                        {/* Car name */}
+                        <h3 className="rc-car-name">{msg.resultData.brand || '?'} {msg.resultData.model || '?'}</h3>
+
+                        {/* Confidence bar */}
+                        <div className="rc-confidence-track">
+                          <div
+                            className={`rc-confidence-fill ${(msg.resultScore || 0) >= 0.88 ? 'rc-conf-high' : (msg.resultScore || 0) >= 0.75 ? 'rc-conf-med' : 'rc-conf-low'}`}
+                            style={{ width: `${Math.round((msg.resultScore || 0) * 100)}%` }}
+                          />
+                        </div>
+                        <p className="rc-confidence-label">Confidence: {Math.round((msg.resultScore || 0) * 100)}%</p>
+
+                        {/* Spec rows */}
+                        <div className="rc-specs">
+                          {msg.resultData.generation && msg.resultData.generation !== '---' && (
+                            <div className="rc-spec-row"><span className="rc-spec-key">Generation</span><span className="rc-spec-val">{msg.resultData.generation}</span></div>
+                          )}
+                          {msg.resultData.year && msg.resultData.year !== '---' && (
+                            <div className="rc-spec-row"><span className="rc-spec-key">Year Range</span><span className="rc-spec-val">{msg.resultData.year}</span></div>
+                          )}
+                          {msg.resultData.engine && msg.resultData.engine !== '---' && (
+                            <div className="rc-spec-row"><span className="rc-spec-key">Engine / Power</span><span className="rc-spec-val">{msg.resultData.engine}</span></div>
+                          )}
+                          {msg.resultData.body && msg.resultData.body !== '---' && (
+                            <div className="rc-spec-row"><span className="rc-spec-key">Body / Fuel</span><span className="rc-spec-val">{msg.resultData.body}</span></div>
+                          )}
+                          {msg.resultData.color && (
+                            <div className="rc-spec-row"><span className="rc-spec-key">Color</span><span className="rc-spec-val">{msg.resultData.color}</span></div>
+                          )}
+                        </div>
+
+                        {/* Pros / Cons */}
+                        <div className="rc-pros-cons">
+                          <div className="rc-pc pros">
+                            <span className="rc-pc-label pros-label">PROS</span>
+                            <span className="rc-pc-text">{msg.resultData.pros && msg.resultData.pros !== '---' && msg.resultData.pros !== 'Not_Available' ? msg.resultData.pros : 'Not available yet'}</span>
+                          </div>
+                          <div className="rc-pc cons">
+                            <span className="rc-pc-label cons-label">CONS</span>
+                            <span className="rc-pc-text">{msg.resultData.cons && msg.resultData.cons !== '---' && msg.resultData.cons !== 'Not_Available' ? msg.resultData.cons : 'Not available yet'}</span>
+                          </div>
+                        </div>
+
+                        {/* Find on AutoHub */}
                         {(msg.resultData.brand || msg.resultData.model) && (
                           <a
                             href={`/search?q=${encodeURIComponent(`${msg.resultData.brand || ''} ${msg.resultData.model || ''}`.trim())}`}
-                            className="autohub-find-btn"
+                            className="rc-find-btn"
                           >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             Find on AutoHub
                           </a>
                         )}

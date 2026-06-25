@@ -10,7 +10,7 @@ import { toLocalImage } from "../utils/carUtils";
 
 // ─── TYPES ───────────────────────────────────────────────────
 
-export type UserRole = "guest" | "user" | "dealer";
+export type UserRole = "guest" | "user" | "dealer" | "admin";
 
 export interface AuthUser {
   id: string;
@@ -29,6 +29,18 @@ export interface ProfileData {
   email: string;
   avatar?: string;
   cover?: string;
+  password?: string;
+  savedPosts?: any[];
+}
+
+export interface DealerProfileData {
+  dealershipName: string;
+  contactPhone: string;
+  bio: string;
+  website: string;
+  location: string;
+  logo?: string;
+  coverImage?: string;
 }
 
 export interface LoginPayload {
@@ -79,11 +91,13 @@ function normalizeUser(
   // Unwrap the `{ success: true, data: { ... } }` payload if it exists
   const payload = data.data ?? data;
 
+  const rawRole = String(payload.user?.role ?? payload.role ?? defaultRole).toLowerCase();
+
   const user: AuthUser = {
     id: payload.user?.id ?? payload.user?._id ?? payload.id ?? payload._id ?? "",
     name: payload.user?.name ?? payload.name ?? fallbackName ?? "",
     email: payload.user?.email ?? payload.email ?? fallbackEmail ?? "",
-    role: (payload.user?.role ?? payload.role ?? defaultRole) as UserRole,
+    role: rawRole as UserRole,
     token: payload.token ?? payload.access_token ?? "",
   };
   if (typeof window !== "undefined") {
@@ -283,9 +297,79 @@ export async function updateProfile(data: ProfileData, avatarFile?: File, coverF
   };
 }
 
-/** GET /api/users/me/profile (Best effort for regular users) */
+/** GET /api/dealers/me/profile */
+export async function getDealerProfile(): Promise<DealerProfileData> {
+  const res = await fetch(`${API_BASE_URL}/dealers/me/profile`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    return { dealershipName: "", contactPhone: "", bio: "", website: "", location: "" };
+  }
+  const data = await res.json();
+  const payload = data.data ?? data;
+  return {
+    dealershipName: payload.dealershipName ?? payload.name ?? "",
+    contactPhone: payload.contactPhone ?? payload.phone ?? "",
+    bio: payload.bio ?? payload.description ?? "",
+    website: payload.website ?? "",
+    location: payload.location ?? "",
+    logo: payload.logo ?? payload.avatar ?? payload.logoUrl ?? "",
+    coverImage: payload.coverImage ?? payload.cover ?? payload.coverUrl ?? "",
+  };
+}
+
+/** PUT /api/dealers/me/profile */
+export async function updateDealerProfile(data: DealerProfileData, logoFile?: string, coverFile?: string): Promise<DealerProfileData> {
+  const payload: any = {
+    dealershipName: data.dealershipName,
+    contactPhone: data.contactPhone,
+    bio: data.bio,
+    website: data.website,
+    location: data.location,
+  };
+  
+  if (logoFile) payload.logo = logoFile;
+  if (coverFile) payload.coverImage = coverFile;
+
+  const res = await fetch(`${API_BASE_URL}/dealers/me/profile`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to update dealer profile");
+  }
+  const updated = await res.json();
+  const resPayload = updated.data ?? updated;
+  return {
+    dealershipName: resPayload.dealershipName ?? data.dealershipName,
+    contactPhone: resPayload.contactPhone ?? data.contactPhone,
+    bio: resPayload.bio ?? data.bio,
+    website: resPayload.website ?? data.website,
+    location: resPayload.location ?? data.location,
+    logo: resPayload.logo ?? data.logo,
+    coverImage: resPayload.coverImage ?? data.coverImage,
+  };
+}
+
+/** PUT /api/dealers/me/change-password */
+export async function changeDealerPassword(oldPassword: string, newPassword: string) {
+  const res = await fetch(`${API_BASE_URL}/dealers/me/change-password`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify({ oldPassword, newPassword }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to change password");
+  }
+  return await res.json();
+}
+
+/** GET /api/users/profile */
 export async function getUserProfile(): Promise<ProfileData> {
-  const res = await fetch(`${API_BASE_URL}/users/me/profile`, {
+  const res = await fetch(`${API_BASE_URL}/users/profile`, {
     headers: authHeaders(),
   });
   if (!res.ok) {
@@ -293,33 +377,30 @@ export async function getUserProfile(): Promise<ProfileData> {
   }
   const data = await res.json();
   const payload = data.data ?? data;
+  const userPayload = payload.user ?? payload;
   return {
-    name: payload.name ?? "",
-    email: payload.email ?? "",
-    location: payload.location ?? "",
-    phone: payload.phone ?? "",
-    whatsapp: payload.whatsapp ?? "",
-    taxNumber: payload.taxNumber ?? "",
-    avatar: payload.avatar ?? payload.avatarUrl ?? "",
-    cover: payload.cover ?? payload.coverImage ?? payload.coverUrl ?? "",
+    name: userPayload.name ?? "",
+    email: userPayload.email ?? "",
+    location: userPayload.location ?? "",
+    phone: userPayload.phone ?? "",
+    whatsapp: userPayload.whatsapp ?? "",
+    taxNumber: userPayload.taxNumber ?? "",
+    avatar: userPayload.avatar ?? userPayload.avatarUrl ?? "",
+    cover: userPayload.cover ?? userPayload.coverImage ?? userPayload.coverUrl ?? "",
+    savedPosts: userPayload.savedPosts ?? [],
   };
 }
 
-/** PUT /api/users/me/profile (Best effort for regular users) */
-export async function updateUserProfile(data: ProfileData, avatarFile?: File, coverFile?: File): Promise<ProfileData> {
+/** PUT /api/users/profile — sends name, phone, avatar */
+export async function updateUserProfile(data: ProfileData, avatarFile?: File): Promise<ProfileData> {
   const formData = new FormData();
   if (data.name) formData.append("name", data.name);
-  if (data.email) formData.append("email", data.email);
-  if (data.location) formData.append("location", data.location);
   if (data.phone) formData.append("phone", data.phone);
-  if (data.whatsapp) formData.append("whatsapp", data.whatsapp);
-  if (data.taxNumber) formData.append("taxNumber", data.taxNumber);
   
   if (avatarFile) formData.append("avatar", avatarFile);
-  if (coverFile) formData.append("cover", coverFile);
 
   const token = getToken();
-  const res = await fetch(`${API_BASE_URL}/users/me/profile`, {
+  const res = await fetch(`${API_BASE_URL}/users/profile`, {
     method: "PUT",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
@@ -327,16 +408,59 @@ export async function updateUserProfile(data: ProfileData, avatarFile?: File, co
   if (!res.ok) throw new Error("Failed to update user profile");
   const updated = await res.json();
   const payload = updated.data ?? updated;
+  const userPayload = payload.user ?? payload;
   return {
-    name: payload.name ?? data.name,
-    email: payload.email ?? data.email,
-    location: payload.location ?? data.location,
-    phone: payload.phone ?? data.phone,
-    whatsapp: payload.whatsapp ?? data.whatsapp,
-    taxNumber: payload.taxNumber ?? data.taxNumber,
-    avatar: payload.avatar ?? data.avatar,
-    cover: payload.cover ?? payload.coverImage ?? data.cover,
+    name: userPayload.name ?? data.name,
+    email: userPayload.email ?? data.email,
+    location: userPayload.location ?? "",
+    phone: userPayload.phone ?? data.phone,
+    whatsapp: userPayload.whatsapp ?? "",
+    taxNumber: userPayload.taxNumber ?? "",
+    avatar: userPayload.avatar ?? data.avatar,
+    cover: userPayload.cover ?? userPayload.coverImage ?? data.cover,
+    savedPosts: userPayload.savedPosts ?? [],
   };
+}
+
+/** PUT /api/users/change-password */
+export async function changeUserPassword(oldPassword: string, newPassword: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/users/change-password`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify({ currentPassword: oldPassword, newPassword }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to change password");
+  }
+}
+
+/** POST /api/users/save-post/{postId} */
+export async function toggleSavePost(postId: string): Promise<{ saved: boolean }> {
+  const res = await fetch(`${API_BASE_URL}/users/save-post/${postId}`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to toggle save post");
+  }
+  const result = await res.json();
+  return result.data ?? result;
+}
+
+/** GET /api/users/saved-posts */
+export async function getSavedPosts(): Promise<Listing[]> {
+  const res = await fetch(`${API_BASE_URL}/users/saved-posts`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to fetch saved posts");
+  }
+  const data = await res.json();
+  const payload = data.data?.posts ?? data.posts ?? [];
+  return payload.map(mapApiPostToListing);
 }
 
 // ─── LISTINGS / POSTS ─────────────────────────────────────────

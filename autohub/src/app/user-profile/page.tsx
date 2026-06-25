@@ -25,7 +25,6 @@ export default function UserProfile() {
     name: user?.name ?? "User",
     email: user?.email ?? "",
     phone: "",
-    location: "",
   };
 
   const [formData, setFormData] = useState<any>(defaultProfile);
@@ -33,19 +32,23 @@ export default function UserProfile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load profile data on mount — keyed by user ID so profiles never bleed across accounts
+  // Change password state
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  // Load profile data on mount
   useEffect(() => {
     if (!isLoggedIn || userRole !== "user") {
       setLoading(false);
       return;
     }
 
-    // First initialize from auth token & local storage for instant feedback
     const baseProfile: any = {
       name: user?.name || "User",
       email: user?.email || "",
-      phone: "",
-      location: "",
       avatar: "",
     };
 
@@ -54,9 +57,7 @@ export default function UserProfile() {
         const stored = localStorage.getItem(`user_profile_${user.id}`);
         if (stored) {
           const saved = JSON.parse(stored);
-          baseProfile.phone    = saved.phone    ?? "";
-          baseProfile.location = saved.location ?? "";
-          baseProfile.avatar   = saved.avatar   ?? "";
+          baseProfile.avatar = saved.avatar ?? "";
         }
       } catch { /* ignore corrupt storage */ }
     }
@@ -72,12 +73,10 @@ export default function UserProfile() {
     // Now try to fetch the authoritative profile from the API
     import("../../lib/api").then(({ getUserProfile }) => {
       getUserProfile().then((profileData) => {
-        if (profileData && profileData.email) { // Check if we actually got a valid payload
+        if (profileData && (profileData.name || profileData.phone)) {
           const merged: any = {
             name: profileData.name || user?.name || "",
             email: profileData.email || user?.email || "",
-            location: profileData.location || baseProfile.location,
-            phone: profileData.phone || baseProfile.phone,
             avatar: profileData.avatar || baseProfile.avatar,
           };
           setFormData(merged);
@@ -91,16 +90,18 @@ export default function UserProfile() {
     });
   }, [isLoggedIn, userRole, user]);
 
+  const [saving, setSaving] = useState(false);
+
   const handleSave = async (overrideData?: any, overrideFile?: File | null) => {
     const dataToSave = overrideData || formData;
     const fileToSave = overrideFile !== undefined ? overrideFile : avatarFile;
-    if (!dataToSave.name || !dataToSave.email) {
-      alert("Name and Email cannot be empty");
+    if (!dataToSave.name) {
+      alert("Name cannot be empty");
       return;
     }
     setSaving(true);
     try {
-      // Persist to backend
+      // Persist to backend via PUT /api/users/profile
       try {
         const { updateUserProfile } = await import("../../lib/api");
         await updateUserProfile(dataToSave as any, fileToSave || undefined);
@@ -112,9 +113,9 @@ export default function UserProfile() {
       if (user?.id && typeof window !== "undefined") {
         localStorage.setItem(
           `user_profile_${user.id}`,
-          JSON.stringify({ phone: dataToSave.phone, location: dataToSave.location, avatar: dataToSave.avatar })
+          JSON.stringify({ avatar: dataToSave.avatar })
         );
-        const updatedUser = { ...user, name: dataToSave.name, email: dataToSave.email };
+        const updatedUser = { ...user, name: dataToSave.name };
         setAuth(updatedUser);
         localStorage.setItem("autohub_user", JSON.stringify(updatedUser));
       }
@@ -131,8 +132,6 @@ export default function UserProfile() {
       setSaving(false);
     }
   };
-
-  const [saving, setSaving] = useState(false);
 
   const handleCancel = () => {
     setFormData(originalData);
@@ -163,6 +162,32 @@ export default function UserProfile() {
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword) {
+      setPasswordError("Please fill in both fields.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters.");
+      return;
+    }
+    setChangingPassword(true);
+    setPasswordError("");
+    setPasswordMsg("");
+    try {
+      const { changeUserPassword } = await import("../../lib/api");
+      await changeUserPassword(oldPassword, newPassword);
+      setPasswordMsg("Password changed successfully!");
+      setOldPassword("");
+      setNewPassword("");
+      setTimeout(() => setPasswordMsg(""), 3500);
+    } catch (e: any) {
+      setPasswordError(e.message || "Failed to change password.");
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -219,8 +244,6 @@ export default function UserProfile() {
       </>
     );
   }
-
-  const mapLink = `https://maps.google.com/?q=${encodeURIComponent(formData.location)}`;
 
   return (
     <>
@@ -292,36 +315,73 @@ export default function UserProfile() {
                 </button>
               </div>
               <div className="info-form">
-                {["name", "email", "phone", "location"].map((field) => {
-                  const icons: Record<string, string> = { name: "", email: "", phone: "", location: "" };
-                  const labels: Record<string, string> = { name: "Full Name", email: "Email Address", phone: "Phone Number", location: "Location" };
-                  return (
-                    <div key={field} className="field-group">
-                      <label>{labels[field]}</label>
-                      <div className="field-wrap" style={{ background: isEditing ? "#fff" : "" }}>
-                        <span className="field-icon">{icons[field]}</span>
-                        <input
-                          type={field === "email" ? "email" : field === "phone" ? "tel" : "text"}
-                          name={field}
-                          value={formData[field as keyof typeof formData]}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                      {field === "location" && <a className="map-link" href={mapLink} target="_blank">View on Map</a>}
+                {[
+                  { key: "name", label: "Full Name", type: "text" },
+                  { key: "email", label: "Email Address", type: "email" },
+                ].map(({ key, label, type }) => (
+                  <div key={key} className="field-group">
+                    <label>{label}</label>
+                    <div className="field-wrap" style={{ background: isEditing && key !== "email" ? "#fff" : "" }}>
+                      <input
+                        type={type}
+                        name={key}
+                        value={formData[key as keyof typeof formData]}
+                        onChange={handleChange}
+                        disabled={!isEditing || key === "email"}
+                      />
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
               {isEditing && (
                 <div className="form-actions">
-                  <button className="btn-save" onClick={handleSave} disabled={saving}>
+                  <button className="btn-save" onClick={() => handleSave()} disabled={saving}>
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
                   <button className="btn-cancel" onClick={handleCancel}>Cancel</button>
                 </div>
               )}
               {showSuccess && <div className="success-msg">Profile updated successfully!</div>}
+
+              {/* Change Password Section */}
+              <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "2px solid #f0f0f5" }}>
+                <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "#1a1a2e", marginBottom: "16px" }}>Change Password</h3>
+                <div className="info-form">
+                  <div className="field-group">
+                    <label>Current Password</label>
+                    <div className="field-wrap" style={{ background: "#fff" }}>
+                      <input
+                        type="password"
+                        placeholder="Enter current password"
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="field-group">
+                    <label>New Password</label>
+                    <div className="field-wrap" style={{ background: "#fff" }}>
+                      <input
+                        type="password"
+                        placeholder="Enter new password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {passwordError && (
+                  <div style={{ color: "#e33", fontSize: "0.85rem", marginTop: "8px" }}>{passwordError}</div>
+                )}
+                {passwordMsg && (
+                  <div className="success-msg" style={{ marginTop: "8px" }}>{passwordMsg}</div>
+                )}
+                <div style={{ marginTop: "14px" }}>
+                  <button className="btn-save" onClick={handleChangePassword} disabled={changingPassword} style={{ width: "auto", padding: "10px 28px" }}>
+                    {changingPassword ? "Changing..." : "Change Password"}
+                  </button>
+                </div>
+              </div>
             </>
           )}
 

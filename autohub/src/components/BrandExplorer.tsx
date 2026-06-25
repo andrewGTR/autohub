@@ -98,13 +98,17 @@ export default function BrandExplorer({ brandName, models }: BrandExplorerProps)
             >
               {/* Image */}
               <div className={styles.cardImageWrapper}>
-                <ModelPreviewImage
-                  brand={brandName}
-                  model={model.n}
-                  year={g0.y || ""}
-                  alt={model.n}
-                  className={styles.cardImage}
-                />
+                {g0.photos && g0.photos.length > 0 ? (
+                  <img src={g0.photos[0]} alt={model.n} className={styles.cardImage} style={{ objectFit: "cover", width: "100%", height: "100%" }} />
+                ) : (
+                  <ModelPreviewImage
+                    brand={brandName}
+                    model={model.n}
+                    year={g0.y || ""}
+                    alt={model.n}
+                    className={styles.cardImage}
+                  />
+                )}
 
                 {/* Hover overlay */}
                 <div className={styles.hoverOverlay}>
