@@ -1,7 +1,7 @@
 "use client";
 
 import PageNavbar from "../../components/PageNavbar";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { forgotPassword, resetPassword } from "../../lib/api";
@@ -11,10 +11,45 @@ export default function ForgotPassword() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtpArray = [...otpArray];
+    
+    // Handle pasting multiple digits
+    if (value.length > 1) {
+      const pastedData = value.slice(0, 6).split("");
+      for (let i = 0; i < pastedData.length; i++) {
+        if (index + i < 6) newOtpArray[index + i] = pastedData[i];
+      }
+      setOtpArray(newOtpArray);
+      setOtp(newOtpArray.join(""));
+      const nextIndex = Math.min(index + pastedData.length, 5);
+      inputRefs.current[nextIndex]?.focus();
+      return;
+    }
+
+    newOtpArray[index] = value;
+    setOtpArray(newOtpArray);
+    setOtp(newOtpArray.join(""));
+
+    // Move to next input if a digit was entered
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpArray[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,15 +125,34 @@ export default function ForgotPassword() {
               <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: "1rem", textAlign: "center" }}>
                 Enter the 6-digit OTP sent to {email} and your new password.
               </p>
-              <input
-                type="text"
-                placeholder="6-digit OTP"
-                className="auth-input"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                maxLength={6}
-                required
-              />
+              
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", marginBottom: "15px" }}>
+                {otpArray.map((digit, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    maxLength={6}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    ref={(el) => {
+                      inputRefs.current[index] = el;
+                    }}
+                    style={{
+                      width: "45px",
+                      height: "45px",
+                      fontSize: "1.5rem",
+                      textAlign: "center",
+                      borderRadius: "8px",
+                      border: "none",
+                      background: "#fff",
+                      color: "#000",
+                      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)"
+                    }}
+                    required
+                  />
+                ))}
+              </div>
               <input
                 type="password"
                 placeholder="New Password"
