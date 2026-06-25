@@ -239,6 +239,32 @@ export async function getMe(): Promise<AuthUser | null> {
   return JSON.parse(stored) as AuthUser;
 }
 
+/** POST /api/auth/forgot-password */
+export async function forgotPassword(email: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to send OTP");
+  }
+}
+
+/** PUT /api/auth/reset-password */
+export async function resetPassword(email: string, otp: string, password: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, otp, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to reset password");
+  }
+}
+
 // ─── PROFILE ─────────────────────────────────────────────────
 
 /** GET /api/dealers/me/profile */
