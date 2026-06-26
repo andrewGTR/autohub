@@ -68,6 +68,8 @@ body {
   height: 60px;
   gap: 16px;
   justify-content: space-between;
+  position: relative;
+  z-index: 99999;
 }
 
 .nav-brand a {
