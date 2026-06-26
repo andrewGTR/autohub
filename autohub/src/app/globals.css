@@ -68,8 +68,6 @@ body {
   height: 60px;
   gap: 16px;
   justify-content: space-between;
-  position: relative;
-  z-index: 99999;
 }
 
 .nav-brand a {
@@ -131,7 +129,7 @@ body {
   background: transparent;
   border: none;
   cursor: pointer;
-  z-index: 99999;
+  z-index: 2147483647 !important;
 }
 
 .hamburger span {
@@ -186,23 +184,24 @@ body {
   }
   
   .nav-links {
-    position: fixed;
-    top: 0;
+    position: fixed !important;
+    top: 0 !important;
     right: -100%;
-    width: 250px;
-    height: 100vh;
-    background: #1a1a2e;
+    width: 250px !important;
+    height: 100vh !important;
+    background: #1a1a2e !important;
     flex-direction: column;
     align-items: flex-start;
     padding: 80px 30px 30px;
     transition: right 0.3s ease;
+    margin: 0 !important;
     box-shadow: -4px 0 15px rgba(0,0,0,0.2);
-    margin: 0;
-    z-index: 99998;
+    z-index: 2147483647 !important;
+    display: flex !important;
   }
 
   .nav-links.open {
-    right: 0;
+    right: 0 !important;
   }
 
   .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
