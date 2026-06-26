@@ -179,14 +179,13 @@ body {
 
 /* ===== MOBILE MENU PORTAL (renders on body, always on top) ===== */
 .mobile-menu-backdrop {
-  display: none;
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 2147483645;
+  z-index: 999998;
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -198,14 +197,14 @@ body {
 }
 
 .mobile-menu-panel {
-  display: none;
   position: fixed;
   top: 0;
   right: -280px;
   width: 260px;
   height: 100%;
   background: #1a1a2e;
-  z-index: 2147483646;
+  z-index: 999999;
+  display: flex;
   flex-direction: column;
   padding: 80px 30px 30px;
   transition: right 0.3s ease;
@@ -263,13 +262,6 @@ body {
   font-weight: 700;
 }
 
-@media (max-width: 768px) {
-  .mobile-menu-backdrop,
-  .mobile-menu-panel {
-    display: block;
-  }
-}
-
 /* ===== GLOBAL RESPONSIVE ===== */
 @media (max-width: 768px) {
   .hamburger {
@@ -281,9 +273,7 @@ body {
     display: none !important;
   }
 
-  .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-  .hamburger.open span:nth-child(2) { opacity: 0; }
-  .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+  /* hamburger stays as 3 lines; X close is inside the portal panel */
 
   /* Adjust navbars for mobile */
   .navbar, .sub-navbar {
