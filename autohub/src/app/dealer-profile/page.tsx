@@ -328,12 +328,12 @@ export default function DealerProfile() {
           </div>
 
           {/* Quick Actions & Notifications */}
-          <div className="dd-2col" style={{ gridTemplateColumns: '2fr 1fr' }}>
+          <div className="dd-2col">
             <div className="dd-section" style={{ padding: '20px' }}>
               <div className="dd-section-header" style={{ marginBottom: '16px', paddingBottom: '12px' }}>
                 <div className="dd-section-title">Quick Actions</div>
               </div>
-              <div className="dd-actions-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+              <div className="dd-actions-grid">
                 <Link href="/sell-car" className="dd-action-btn">
                   <IconPlus />
                   <span className="dd-action-text">Add New Car</span>
@@ -368,7 +368,7 @@ export default function DealerProfile() {
 
           <div className="dd-2col">
             {/* Left Column */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
               
               {/* Listings Table */}
               <div className="dd-section" id="listings-table">
